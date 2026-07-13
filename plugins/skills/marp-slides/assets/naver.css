@@ -1,0 +1,231 @@
+/* @theme naver */
+
+@import 'default';
+
+/* ============================================
+   NAVER Corporate Theme for Marp
+   Extracted from: 네이버 테마.thmx
+   ============================================ */
+
+:root {
+  --naver-green: #03C75A;
+  --naver-dark: #1F497D;
+  --naver-light-bg: #FAFAFA;
+  --naver-gray: #808080;
+  --accent1: #4F81BD;
+  --accent2: #C0504D;
+  --accent3: #9BBB59;
+  --accent4: #8064A2;
+  --accent5: #4BACC6;
+  --accent6: #F79646;
+}
+
+/* --- Base --- */
+
+section {
+  font-family: 'Nanum Gothic', '나눔고딕', 'Malgun Gothic', '맑은 고딕', sans-serif;
+  background-color: #FFFFFF;
+  color: #333333;
+  padding: 100px 60px 60px 60px;
+}
+
+section > h1:first-of-type {
+  position: absolute;
+  top: 30px;
+  left: 60px;
+  right: 60px;
+  margin: 0;
+}
+
+section::after {
+  content: attr(data-marpit-pagination) '';
+  font-size: 12px;
+  color: var(--naver-gray);
+  position: absolute;
+  bottom: 24px;
+  right: 60px;
+}
+
+section::before {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  left: 50px;
+  width: 80px;
+  height: 16px;
+  background-image: url("data:image/png;base64,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");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+/* --- Typography --- */
+
+h1 {
+  color: var(--naver-green);
+  font-weight: 700;
+  border-bottom: 2px solid var(--naver-green);
+  padding-bottom: 8px;
+}
+
+h2 {
+  color: #333333;
+  font-weight: 700;
+}
+
+h3 {
+  color: var(--naver-dark);
+}
+
+a {
+  color: var(--accent1);
+}
+
+strong {
+  color: var(--naver-green);
+}
+
+/* --- Code --- */
+
+code {
+  background-color: #F4F4F4;
+  color: #333333;
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+pre {
+  background-color: #F4F4F4;
+  border-left: 4px solid var(--naver-green);
+  border-radius: 4px;
+}
+
+/* --- Blockquote --- */
+
+blockquote {
+  border-left: 4px solid var(--naver-green);
+  color: #666666;
+  background-color: #F9FBF9;
+  padding: 8px 16px;
+}
+
+/* --- Table --- */
+
+table thead {
+  background-color: var(--naver-green);
+  color: #FFFFFF;
+}
+
+table thead th {
+  color: #FFFFFF;
+}
+
+table tbody tr:nth-child(even) {
+  background-color: #F4F8F4;
+}
+
+/* --- Footnote --- */
+
+.footnote {
+  position: absolute;
+  bottom: 45px;
+  left: 60px;
+  right: 60px;
+  font-size: 0.55em;
+  color: #888888;
+  border-top: 1px solid #DDDDDD;
+  padding-top: 6px;
+  line-height: 1.6;
+}
+
+.footnote a {
+  color: #888888;
+  text-decoration: underline;
+}
+
+sup {
+  color: var(--naver-green);
+  font-weight: 700;
+  font-size: 0.7em;
+}
+
+/* --- Lead subtitle (발표자 정보) --- */
+
+section.lead h3 {
+  color: #999999;
+  font-weight: 400;
+  font-size: 0.8em;
+  margin-top: 16px;
+}
+
+/* --- Slide Variants --- */
+
+/* lead: 타이틀/표지 슬라이드 */
+section.lead {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0F7F0 100%);
+}
+
+section.lead h1 {
+  border-bottom: none;
+  font-size: 2.4em;
+}
+
+section.lead h2 {
+  color: #666666;
+  font-weight: 400;
+}
+
+/* invert: 어두운 배경 슬라이드 */
+section.invert {
+  background-color: #1A1A1A;
+  color: #EEEEEE;
+}
+
+section.invert h1 {
+  color: var(--naver-green);
+  border-bottom-color: var(--naver-green);
+}
+
+section.invert h2 {
+  color: #DDDDDD;
+}
+
+section.invert code {
+  background-color: #2D2D2D;
+  color: #E0E0E0;
+}
+
+section.invert pre {
+  background-color: #2D2D2D;
+}
+
+section.invert::before {
+  opacity: 0.5;
+}
+
+/* highlight: 네이버 그린 강조 슬라이드 */
+section.highlight {
+  background: var(--naver-green);
+  color: #FFFFFF;
+}
+
+section.highlight h1 {
+  color: #FFFFFF;
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+
+section.highlight h2 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+section.highlight::before {
+  opacity: 0.5;
+}
+
+section.highlight::after {
+  color: rgba(255, 255, 255, 0.5);
+}

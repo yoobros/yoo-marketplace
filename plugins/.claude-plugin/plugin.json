@@ -1,0 +1,9 @@
+{
+  "name": "marp-slides",
+  "version": "1.0.1",
+  "description": "Create and manage Marp presentations with LaTeX, Mermaid, footnotes, and custom themes via natural language.",
+  "author": {
+    "name": "swyo",
+    "email": "l22491360@gmail.com"
+  }
+}

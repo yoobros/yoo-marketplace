@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "yoo-marketplace",
+  "description": "개인용 Claude Code 플러그인 마켓플레이스",
+  "owner": {
+    "name": "swyo",
+    "email": "l22491360@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "marp-slides",
+      "description": "Marp로 LaTeX/Mermaid/footnote가 포함된 슬라이드를 자연어로 생성·수정·빌드. 네이버 커스텀 테마 포함",
+      "author": {
+        "name": "swyo",
+        "email": "l22491360@gmail.com"
+      },
+      "source": "./plugins",
+      "category": "productivity",
+      "tags": ["marp", "slides", "presentation", "latex", "mermaid", "pptx"]
+    }
+  ]
+}

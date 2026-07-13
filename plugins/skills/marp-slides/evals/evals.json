@@ -1,0 +1,32 @@
+[
+  {
+    "name": "create-new-slides",
+    "prompt": "새 슬라이드 프로젝트를 만들어줘. 주제는 'ML 파이프라인 소개'이고, 발표자는 Personalized Search 유성욱이야.",
+    "expected": "Creates a marp/ directory structure with src/slides.md containing lead slide, TOC, and content slides with naver theme"
+  },
+  {
+    "name": "add-latex-slide",
+    "prompt": "3번 슬라이드에 cross-entropy loss 수식을 추가해줘",
+    "expected": "Adds a LaTeX block equation for cross-entropy loss to the third slide"
+  },
+  {
+    "name": "add-mermaid-diagram",
+    "prompt": "데이터 파이프라인 플로우차트를 mermaid로 추가해줘",
+    "expected": "Adds a new slide with <pre class=\"mermaid\"> flowchart, no indentation"
+  },
+  {
+    "name": "add-footnote",
+    "prompt": "이 슬라이드에 Attention is All You Need 논문 참조를 footnote로 추가해줘",
+    "expected": "Adds <sup>[N]</sup> in text and <div class=\"footnote\"> block at bottom with paper citation"
+  },
+  {
+    "name": "build-pptx",
+    "prompt": "슬라이드를 pptx로 빌드해줘",
+    "expected": "Runs npm run build:pptx or equivalent marp-cli command to generate dist/slides.pptx"
+  },
+  {
+    "name": "mermaid-pdf-no-clipping",
+    "prompt": "긴 한글 라벨이 들어간 mermaid 플로우차트 슬라이드를 만들고 PDF로 빌드해줘. PDF에서 노드 안 글자가 잘리면 안 돼.",
+    "expected": "Slides include mermaid init with htmlLabels:false (and flowchart.htmlLabels:false); PDF builds successfully; when PDF pages are rendered to images, diagram node text is fully visible (not clipped). Agent verifies against the actual PDF, not just HTML/PNG screenshot."
+  }
+]
