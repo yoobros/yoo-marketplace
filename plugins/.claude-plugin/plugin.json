@@ -1,7 +1,7 @@
 {
   "name": "marp-slides",
-  "version": "1.0.1",
-  "description": "Create and manage Marp presentations with LaTeX, Mermaid, footnotes, and custom themes via natural language.",
+  "version": "1.1.0",
+  "description": "Create and manage Marp presentations via natural language: proven deck template, LaTeX, Mermaid, footnotes, bundled NAVER theme, and custom brand themes from any CSS/design guide. Works in Claude Code and Codex.",
   "author": {
     "name": "swyo",
     "email": "l22491360@gmail.com"

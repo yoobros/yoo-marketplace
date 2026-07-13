@@ -9,14 +9,21 @@
   "plugins": [
     {
       "name": "marp-slides",
-      "description": "Marp로 LaTeX/Mermaid/footnote가 포함된 슬라이드를 자연어로 생성·수정·빌드. 네이버 커스텀 테마 포함",
+      "description": "Marp로 슬라이드를 자연어로 생성·수정·빌드. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들, 임의 브랜드 CSS/디자인 가이드로 커스텀 테마 제작 지원 (Claude Code·Codex 겸용)",
       "author": {
         "name": "swyo",
         "email": "l22491360@gmail.com"
       },
       "source": "./plugins",
       "category": "productivity",
-      "tags": ["marp", "slides", "presentation", "latex", "mermaid", "pptx"]
+      "tags": [
+        "marp",
+        "slides",
+        "presentation",
+        "latex",
+        "mermaid",
+        "pptx"
+      ]
     }
   ]
 }

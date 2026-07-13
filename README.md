@@ -6,7 +6,7 @@
 
 | 플러그인 | 설명 | 카테고리 |
 |---------|------|---------|
-| [marp-slides](./plugins) | Marp로 LaTeX/Mermaid/footnote가 포함된 슬라이드를 자연어로 생성·수정·빌드. 네이버 커스텀 테마 포함 | productivity |
+| [marp-slides](./plugins) | Marp로 슬라이드를 자연어로 생성·수정·빌드. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들 + 브랜드 CSS 기반 커스텀 테마 (Claude Code·Codex 겸용) | productivity |
 
 ## 설치 가이드
 
@@ -133,7 +133,7 @@ SKILL.md 를 찾아 읽고 "있다"고 답할 수 있다. **전체 목록 나열
 본문이 로드된다. 별도 활성화 명령은 없다. 안 잡히면 프롬프트에 "marp-slides skill 을
 따라서" 를 명시하면 강제 로드된다.
 
-### 3. Codex 사용 시 주의 (실측 기준, codex-cli 0.144)
+### Codex 사용 시 주의 (실측 기준, codex-cli 0.144)
 
 - **`codex exec` 기본 샌드박스는 read-only** — 파일 생성이 조용히 차단된다.
   프로젝트 생성 작업은 `codex exec --sandbox workspace-write ...` 로 실행할 것.
@@ -142,9 +142,9 @@ SKILL.md 를 찾아 읽고 "있다"고 답할 수 있다. **전체 목록 나열
 - 샌드박스에서 네트워크가 막히면 `npm install` 과 mermaid CDN 이 실패한다 —
   network access 를 허용하거나 스킬의 `references/mermaid-pdf.md` 로컬 vendoring 절차 사용.
 
-검증된 시나리오: symlink 연결 → `codex exec --sandbox workspace-write` 로 새 덱
-프로젝트 생성 → 템플릿 복사(레이아웃 유틸리티·`--html` preview·`htmlLabels:false`
-포함) 정상 확인.
+검증된 시나리오: 방법 A(플러그인 설치) 로 스킬 로드 확인 + `codex exec --sandbox
+workspace-write` 로 새 덱 프로젝트 생성 → 템플릿 복사(레이아웃 유틸리티·`--html`
+preview·`htmlLabels:false` 포함) 정상 확인.
 
 ## 개발 가이드
 
