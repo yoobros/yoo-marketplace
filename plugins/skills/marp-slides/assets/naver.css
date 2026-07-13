@@ -23,6 +23,7 @@
 /* --- Base --- */
 
 section {
+  --accent: var(--naver-green); /* 테마 공통 계약 — 템플릿 레이아웃 유틸리티가 참조 */
   font-family: 'Nanum Gothic', '나눔고딕', 'Malgun Gothic', '맑은 고딕', sans-serif;
   background-color: #FFFFFF;
   color: #333333;

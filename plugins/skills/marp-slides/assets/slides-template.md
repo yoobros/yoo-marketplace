@@ -57,7 +57,7 @@ style: |
 
 <!--
 ==============================================================================
- code-baseline: <sha> (<YYYY-MM-DD>)
+ code-baseline: {{sha}} ({{YYYY-MM-DD}})
  (코드/프로젝트 설명 덱일 때만) 이 덱이 설명하는 대상 코드의 커밋을 명시한다.
  갱신 시:  git rev-parse --short HEAD  &&  git log -1 --format=%cd --date=short
  문서 브랜치 머지 커밋이 아니라 '설명 대상 코드'의 커밋을 적는다.
@@ -74,7 +74,7 @@ style: |
 
 <div class="footnote">
 
-프로젝트명 · 저장소 URL · 코드 기준 <sha> (<YYYY-MM-DD>)
+프로젝트명 · 저장소 URL · 코드 기준 {{sha}} ({{YYYY-MM-DD}})
 
 </div>
 
