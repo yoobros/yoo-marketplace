@@ -93,30 +93,41 @@ claude plugin uninstall marp-slides  # 외부 셸
 ## Codex 등 다른 하네스에서 쓰기
 
 스킬은 [agentskills.io](https://agentskills.io/specification) 스펙(`SKILL.md` + frontmatter)을
-따르므로 Claude Code 전용이 아니다. Codex CLI · Copilot CLI · Gemini CLI 는 공통으로
-`~/.agents/skills/` 를 스킬 디렉토리로 인식한다.
+따르므로 Claude Code 전용이 아니다.
 
-### 1. 스킬 복사 (⚠️ symlink 불가 — Codex 가 symlink 디렉토리를 스킬 스캔에서 무시한다)
+### 방법 A — Codex 플러그인 마켓플레이스 (권장, codex-cli ≥ 0.144)
+
+Codex 는 Claude 플러그인 마켓플레이스 포맷(`marketplace.json`)을 그대로 읽는다:
+
+```bash
+codex plugin marketplace add https://github.com/yoobros/yoo-marketplace
+codex plugin add marp-slides@yoo-marketplace
+```
+
+설치 후 스킬은 `marp-slides:marp-slides` 네임스페이스로 로드된다. 저장소 갱신 반영은
+`codex plugin marketplace` 의 upgrade 서브커맨드 사용.
+
+### 방법 B — 스킬 디렉토리 직접 복사 (Copilot CLI · Gemini CLI 등 공용)
+
+`~/.agents/skills/` 는 Codex · Copilot CLI · Gemini CLI 가 공통 인식하는 경로다.
 
 ```bash
 mkdir -p ~/.agents/skills
 cp -R /path/to/yoo-marketplace/plugins/skills/marp-slides ~/.agents/skills/marp-slides
 ```
 
-저장소를 갱신했으면 다시 복사해서 동기화한다:
+- ⚠️ **symlink 불가** — Codex 가 symlink 디렉토리를 스킬 스캔에서 무시한다 (실측).
+  반드시 실제 복사로, 갱신 시 `rsync -a --delete <src>/ <dst>/` 로 재동기화.
+- 방법 A 와 병용하면 같은 스킬이 중복 로드되므로 하나만 쓴다.
+
+### 동작 확인
 
 ```bash
-rsync -a --delete /path/to/yoo-marketplace/plugins/skills/marp-slides/ ~/.agents/skills/marp-slides/
+codex exec --skip-git-repo-check "너에게 로드된 skill 목록 전체를 나열해줘"
 ```
 
-### 2. 동작 확인
-
-```bash
-codex exec --skip-git-repo-check "너에게 로드된 skill 목록에 marp-slides 가 있는지 확인해줘"
-```
-
-주의: 목록에 없어도 Codex 가 파일시스템 검색으로 SKILL.md 를 찾아 읽고 "있다"고
-답하는 경우가 있다. **"로드된 skill 목록 전체를 나열해줘"** 로 물어야 정확하다.
+주의: "marp-slides 있어?" 처럼 물으면 목록에 없어도 Codex 가 파일시스템 검색으로
+SKILL.md 를 찾아 읽고 "있다"고 답할 수 있다. **전체 목록 나열**로 물어야 정확하다.
 
 세션 시작 시 frontmatter(name/description)가 스캔되고, 슬라이드 관련 요청이 오면
 본문이 로드된다. 별도 활성화 명령은 없다. 안 잡히면 프롬프트에 "marp-slides skill 을
