@@ -90,6 +90,42 @@ claude plugin update marp-slides
 claude plugin uninstall marp-slides  # 외부 셸
 ```
 
+## Codex 등 다른 하네스에서 쓰기
+
+스킬은 [agentskills.io](https://agentskills.io/specification) 스펙(`SKILL.md` + frontmatter)을
+따르므로 Claude Code 전용이 아니다. Codex CLI · Copilot CLI · Gemini CLI 는 공통으로
+`~/.agents/skills/` 를 스킬 디렉토리로 인식한다.
+
+### 1. 스킬 연결 (symlink 권장 — 저장소 수정이 즉시 반영)
+
+```bash
+mkdir -p ~/.agents/skills
+ln -sfn /path/to/yoo-marketplace/plugins/skills/marp-slides ~/.agents/skills/marp-slides
+```
+
+### 2. 동작 확인
+
+```bash
+codex exec --skip-git-repo-check "너에게 로드된 skill 목록에 marp-slides 가 있는지 확인해줘"
+```
+
+세션 시작 시 frontmatter(name/description)가 스캔되고, 슬라이드 관련 요청이 오면
+본문이 로드된다. 별도 활성화 명령은 없다. 안 잡히면 프롬프트에 "marp-slides skill 을
+따라서" 를 명시하면 강제 로드된다.
+
+### 3. Codex 사용 시 주의 (실측 기준, codex-cli 0.144)
+
+- **`codex exec` 기본 샌드박스는 read-only** — 파일 생성이 조용히 차단된다.
+  프로젝트 생성 작업은 `codex exec --sandbox workspace-write ...` 로 실행할 것.
+- **비대화형인데 질문하고 종료할 수 있다** (청중/테마 확인 등). exec 모드에선
+  프롬프트에 "질문하지 말고 스킬의 기본값으로 진행해" 를 붙이는 게 안전하다.
+- 샌드박스에서 네트워크가 막히면 `npm install` 과 mermaid CDN 이 실패한다 —
+  network access 를 허용하거나 스킬의 `references/mermaid-pdf.md` 로컬 vendoring 절차 사용.
+
+검증된 시나리오: symlink 연결 → `codex exec --sandbox workspace-write` 로 새 덱
+프로젝트 생성 → 템플릿 복사(레이아웃 유틸리티·`--html` preview·`htmlLabels:false`
+포함) 정상 확인.
+
 ## 개발 가이드
 
 ### 로컬에서 플러그인 테스트
