@@ -32,21 +32,44 @@
   {
     "name": "template-based-init",
     "prompt": "우리 추천 시스템 프로젝트를 소개하는 발표자료를 marp로 만들어줘.",
-    "expected": "Starts from assets/slides-template.md (not from scratch): frontmatter includes layout utility styles (.cols, .card, .pill, .muted, compact), deck follows 표지→목차(bold topic — summary)→highlight 한 장 요약→본문→로드맵→감사 flow, and package.json preview script includes --html"
+    "expected": "Starts from assets/slides-template.md (not from scratch): frontmatter includes layout utility styles (.cols, .card, .pill, .muted, compact), deck follows 표지→목차(bold topic — summary)→highlight 한 장 요약→본문→로드맵→감사 flow, and package.json preview script includes --html",
+    "assertions": [
+      "src/slides.md frontmatter style 블록에 .cols 와 .card 레이아웃 유틸리티가 있다",
+      "package.json 의 preview 스크립트에 --html 플래그가 있다",
+      "덱에 highlight 클래스의 '한 장 요약' 슬라이드가 표지/목차 다음에 있다",
+      "mermaid initialize 에 htmlLabels: false 가 있다",
+      "미치환 {{ }} placeholder 가 slides.md 에 없다"
+    ]
   },
   {
     "name": "custom-brand-theme",
     "prompt": "우리 회사 브랜드 컬러가 #FF6B00이고 로고 png가 있어. 이 스타일로 커스터마이징된 테마로 슬라이드를 만들어줘.",
-    "expected": "Extracts design tokens (confirms with user), creates themes/<name>/<name>.css with /* @theme */ header, declares section { --accent: #FF6B00 }, implements lead/invert/highlight classes, updates frontmatter theme and --theme-set path, and verifies the rendered deck via PDF page images"
+    "expected": "Extracts design tokens (confirms with user), creates themes/<name>/<name>.css with /* @theme */ header, declares section { --accent: #FF6B00 }, implements lead/invert/highlight classes, updates frontmatter theme and --theme-set path, and verifies the rendered deck via PDF page images",
+    "assertions": [
+      "themes/ 아래 새 테마 css 가 있고 첫 줄이 /* @theme <이름> */ 이다",
+      "테마 css 의 section 에 --accent: #FF6B00 (또는 동일 값 변수) 선언이 있다",
+      "lead / invert / highlight 클래스가 테마 css 에 구현되어 있다",
+      "slides.md frontmatter theme 과 package.json --theme-set 경로가 새 테마를 가리킨다"
+    ]
   },
   {
     "name": "english-deck",
     "prompt": "Make me an English presentation introducing our bundle recommendation system.",
-    "expected": "Produces the same template structure with all placeholders, TOC, mermaid labels, and captions in English (Agenda, One-slide Summary, Thank You); citations kept in original language; checks table/label overflow with compact class if needed"
+    "expected": "Produces the same template structure with all placeholders, TOC, mermaid labels, and captions in English (Agenda, One-slide Summary, Thank You); citations kept in original language; checks table/label overflow with compact class if needed",
+    "assertions": [
+      "slides.md 본문(제목/목차/캡션)이 영어다 (한글 본문 없음)",
+      "Agenda / One-slide summary / Thank You 류의 영어 골격 슬라이드가 있다",
+      "레이아웃 유틸리티(.cols/.card)와 htmlLabels: false 는 한국어 템플릿과 동일하게 유지된다"
+    ]
   },
   {
     "name": "code-baseline-marker",
     "prompt": "이 레포 코드를 설명하는 발표자료야. 코드 기준 커밋을 명시해줘.",
-    "expected": "Adds code-baseline HTML comment right after frontmatter and '코드 기준 <sha> (<date>)' in the title slide footnote, using git rev-parse --short HEAD of the described code"
+    "expected": "Adds code-baseline HTML comment right after frontmatter and '코드 기준 <sha> (<date>)' in the title slide footnote, using git rev-parse --short HEAD of the described code",
+    "assertions": [
+      "frontmatter 바로 뒤에 code-baseline: <실제 sha> 주석이 있다",
+      "표지 footnote 에 '코드 기준 <sha>' 표기가 있다",
+      "sha 가 placeholder 가 아닌 실제 git 커밋 해시다"
+    ]
   }
 ]
