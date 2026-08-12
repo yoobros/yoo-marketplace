@@ -118,17 +118,20 @@ class InspectEditabilityTests(unittest.TestCase):
         """Catch stale discovery metadata that still presents flattened PPTX as the feature."""
 
         plugin = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
-        marketplace = json.loads(MARKETPLACE_MANIFEST.read_text(encoding="utf-8"))
-        entry = next(item for item in marketplace["plugins"] if item["name"] == "marp-slides")
-
         self.assertEqual(plugin["version"], "1.2.0")
-        self.assertEqual(entry["version"], "1.2.0")
         self.assertIn("editable", plugin["description"].lower())
-        self.assertIn("편집", entry["description"])
 
         for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "NAVER", "CSS", "Claude Code", "Codex"]:
             with self.subTest(manifest="plugin", keyword=keyword):
                 self.assertIn(keyword, plugin["description"])
+
+        if not MARKETPLACE_MANIFEST.is_file():
+            return
+
+        marketplace = json.loads(MARKETPLACE_MANIFEST.read_text(encoding="utf-8"))
+        entry = next(item for item in marketplace["plugins"] if item["name"] == "marp-slides")
+        self.assertEqual(entry["version"], "1.2.0")
+        self.assertIn("편집", entry["description"])
         for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "네이버", "CSS", "Claude Code", "Codex"]:
             with self.subTest(manifest="marketplace", keyword=keyword):
                 self.assertIn(keyword, entry["description"])
@@ -287,6 +290,8 @@ class InspectEditabilityTests(unittest.TestCase):
     def test_pptxgenjs_smoke_is_cross_platform_and_checks_native_ooxml(self) -> None:
         """Require the installability claim to be exercised on all hosted desktop OSes."""
 
+        if not PPTXGENJS_WORKFLOW.is_file():
+            self.skipTest("repository workflow is not packaged in an installed plugin")
         workflow = PPTXGENJS_WORKFLOW.read_text(encoding="utf-8")
         smoke = PPTXGENJS_SMOKE.read_text(encoding="utf-8")
         for runner in ["macos-latest", "ubuntu-latest", "windows-latest"]:
@@ -313,11 +318,12 @@ class InspectEditabilityTests(unittest.TestCase):
         """Do not turn a successful install smoke into a silent supply-chain claim."""
 
         reference = PPTXGENJS_REFERENCE.read_text(encoding="utf-8")
-        workflow = PPTXGENJS_WORKFLOW.read_text(encoding="utf-8")
         for phrase in ["npm audit", "GHSA-w3rx-r6r6-pgpr", "GHSA-5p2g-fcmc-qvqq", "비신뢰"]:
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, reference)
-        self.assertIn("npm audit --audit-level=critical", workflow)
+        if PPTXGENJS_WORKFLOW.is_file():
+            workflow = PPTXGENJS_WORKFLOW.read_text(encoding="utf-8")
+            self.assertIn("npm audit --audit-level=critical", workflow)
 
     def test_pptxgenjs_lockfile_is_portable_outside_the_corporate_network(self) -> None:
         """Keep public hosted runners from resolving dependencies through a private registry."""
