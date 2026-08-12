@@ -16,6 +16,8 @@ import unittest
 SCRIPT = (
     Path(__file__).resolve().parents[1] / "inspect_editability.py"
 )
+SKILL = Path(__file__).resolve().parents[2] / "SKILL.md"
+EDITABLE_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "editable-pptx.md"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
 INSPECTOR = importlib.util.module_from_spec(SPEC)
@@ -59,6 +61,95 @@ def parse_report(result: subprocess.CompletedProcess[str]) -> dict:
 
 
 class InspectEditabilityTests(unittest.TestCase):
+    def test_skill_defaults_pptx_to_native_editable_objects(self) -> None:
+        """Catch a regression to Marp's flattened PPTX as the default route."""
+
+        skill = SKILL.read_text(encoding="utf-8")
+        required = [
+            "PPTX는 기본적으로 편집 가능한 네이티브 객체",
+            "marp --pptx",
+            "presentations:Presentations",
+            "inspect_editability.py",
+            "비편집형",
+        ]
+
+        for phrase in required:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, skill)
+
+        quick_start = skill.split("## 새 덱을 만드는 최단 경로", 1)[1].split(
+            "## 사전 요구사항", 1
+        )[0]
+        self.assertNotIn("npm run build:pptx", quick_start)
+
+    def test_editable_guidance_enforces_message_density_and_speaker_notes(self) -> None:
+        """Keep the audience-facing layer concise without losing source detail."""
+
+        guidance = "\n".join(
+            [
+                SKILL.read_text(encoding="utf-8"),
+                EDITABLE_REFERENCE.read_text(encoding="utf-8"),
+            ]
+        )
+        for phrase in [
+            "한 슬라이드에 하나의 메시지",
+            "발표용으로 간결",
+            "발표자 노트",
+            "의도적인 여백",
+            "과도한 빈 공간",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, guidance)
+
+    def test_editable_guidance_maps_information_to_semantic_visuals(self) -> None:
+        """Prevent decorative dashboards and mismatched chart choices."""
+
+        reference = EDITABLE_REFERENCE.read_text(encoding="utf-8")
+        mappings = [
+            ("일정", "간트"),
+            ("커뮤니케이션", "순차 흐름"),
+            ("추세", "선 차트"),
+            ("분포", "히스토그램"),
+            ("구성", "파이/도넛"),
+            ("비교", "막대/표"),
+            ("의사결정", "매트릭스/흐름"),
+        ]
+        for concept, visual in mappings:
+            with self.subTest(concept=concept):
+                self.assertIn(concept, reference)
+                self.assertIn(visual, reference)
+        self.assertIn("차트 크기", reference)
+
+    def test_editable_guidance_requires_iterative_full_deck_visual_qa(self) -> None:
+        """Make every delivery loop catch layout failures, not just editability."""
+
+        reference = EDITABLE_REFERENCE.read_text(encoding="utf-8")
+        for phrase in [
+            "모든 슬라이드",
+            "겹침",
+            "경계 침범",
+            "잘림",
+            "제목 줄바꿈",
+            "심한 축소",
+            "과도한 빈 공간",
+            "수정 후 재실행",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, reference)
+
+    def test_html_and_pdf_build_routes_remain_available(self) -> None:
+        """Editable PPTX guidance must not regress Marp HTML/PDF behavior."""
+
+        skill = SKILL.read_text(encoding="utf-8")
+        for command in [
+            '"build": "marp src/slides.md --html',
+            '"build:pdf": "marp src/slides.md --html',
+            '"build:all": "npm run build && npm run build:pdf"',
+            '"build:pptx:flattened": "marp src/slides.md --html',
+        ]:
+            with self.subTest(command=command):
+                self.assertIn(command, skill)
+
     def test_text_and_shape_slide_is_editable(self) -> None:
         slide = f"""<?xml version='1.0' encoding='UTF-8'?>
 <p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
