@@ -10,6 +10,18 @@
     "expected": "Adds a LaTeX block equation for cross-entropy loss to the third slide"
   },
   {
+    "name": "build-editable-pptx-with-latex",
+    "prompt": "LaTeX 수식이 포함된 이 Marp 덱을 편집 가능한 PPTX로 만들어줘. PowerPoint에서 수식도 직접 고칠 수 있어야 해.",
+    "expected": "Preserves every LaTeX formula as a native editable PowerPoint Office Math equation rather than an image, SVG, or plain-text approximation.",
+    "assertions": [
+      "Counts inline and block LaTeX formulas in the Marp source before conversion",
+      "Creates native Office Math objects containing a14:m and m:oMath or m:oMathPara; does not claim SVG, PNG, or plain text is an editable equation",
+      "Runs inspect_editability.py with --require-editable and --require-equations set to the source equation count",
+      "Opens the result in Microsoft PowerPoint and verifies equation edit mode and structured editing before delivery",
+      "Does not automatically fall back to non-editable equation images when native equation creation or verification is unavailable"
+    ]
+  },
+  {
     "name": "add-mermaid-diagram",
     "prompt": "데이터 파이프라인 플로우차트를 mermaid로 추가해줘",
     "expected": "Adds a new slide with <pre class=\"mermaid\"> flowchart, no indentation"

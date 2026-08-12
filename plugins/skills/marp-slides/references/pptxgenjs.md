@@ -45,6 +45,8 @@ DoS 위험을 보고한다. 현재 npm registry에는 이를 해결한 호환 �
 - 덱의 공통 테마, 좌표계, 안전 여백, 제목 영역을 헬퍼로 고정하되 각 슬라이드의 핵심 시각은
   콘텐츠 의미에 맞게 구성한다.
 - 간트·순차 흐름·차트·표의 라벨은 실제 렌더에서 읽을 수 있는 크기로 유지한다.
+- PptxGenJS 4.0.1에는 문서화된 네이티브 수식 API가 없다. LaTeX가 있으면 덱 생성 후
+  [editable-equations.md](editable-equations.md)의 검증된 Office Math 후처리를 적용한다.
 
 ## 검증
 

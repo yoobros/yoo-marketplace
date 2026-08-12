@@ -22,7 +22,8 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 
 **PPTX는 기본적으로 편집 가능한 네이티브 객체**로 제공한다. 제목·본문은 텍스트 객체,
 표·차트·정보성 다이어그램은 각각 편집 가능한 표·차트·도형/커넥터로 재구성한다. 사진,
-로고, 질감, 복잡한 장식만 래스터로 유지할 수 있다.
+로고, 질감, 복잡한 장식만 래스터로 유지할 수 있다. LaTeX 수식은 PowerPoint의 네이티브
+Office Math (OMML) 수식 객체로 만들어 수식 편집기에서 수정할 수 있어야 한다.
 
 편집형 PPTX는 **한 슬라이드에 하나의 메시지**만 전면에 두고, 화면 문구는 발표용으로 간결하게
 다듬는다. 근거·세부 수치·출처는 발표자 노트에 보존한다. 레이아웃은 의도적인 여백을 사용하되
@@ -43,10 +44,14 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 - Claude Code에서는 Node.js 18+와 `PptxGenJS`를 사용해 같은 의미 객체를 네이티브로
   재구성한다. 설치·버전 고정·실행·검증은 [references/pptxgenjs.md](references/pptxgenjs.md)를
   따른다. 생성 실패를 `marp --pptx`로 자동 폴백하지 않는다.
+- Claude Code의 `slide-builder` 같은 위임 에이전트도 작업 시작 시 설치된 이 스킬의 최신
+  본문을 읽어야 하며, 에이전트의 정적 지침이 이 편집형 산출물 계약을 약화할 수 없다.
 - 그 밖의 런타임에 네이티브 생성 도구가 없으면 한계를 알리고, 비편집형 폴백의 동의를
   받은 뒤에만 `marp --pptx`를 사용한다.
 - 객체 매핑, Codex 생성 절차, 구조/시각 검증의 상세는
   [references/editable-pptx.md](references/editable-pptx.md)를 읽는다.
+- LaTeX가 하나라도 있으면 [references/editable-equations.md](references/editable-equations.md)를
+  읽고 네이티브 수식 개수와 PowerPoint 편집 모드를 검증한다.
 
 ## 새 덱을 만드는 최단 경로
 
@@ -242,6 +247,10 @@ $$
 P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
 $$
 ```
+
+HTML/PDF에서는 위 LaTeX 원본을 렌더한다. 편집형 PPTX에서는 화면 캡처, SVG/PNG 또는 일반
+텍스트로 바꾸지 않고 Office Math(OMML) 객체로 변환한다. 자세한 절차와 실패 처리는
+[references/editable-equations.md](references/editable-equations.md)를 따른다.
 
 ### Mermaid 다이어그램
 

@@ -19,6 +19,7 @@ SCRIPT = (
 SKILL = Path(__file__).resolve().parents[2] / "SKILL.md"
 EDITABLE_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "editable-pptx.md"
 PPTXGENJS_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "pptxgenjs.md"
+EQUATION_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "editable-equations.md"
 EVALS = Path(__file__).resolve().parents[2] / "evals" / "evals.json"
 PLUGIN_MANIFEST = Path(__file__).resolve().parents[4] / ".claude-plugin" / "plugin.json"
 MARKETPLACE_MANIFEST = Path(__file__).resolve().parents[5] / ".claude-plugin" / "marketplace.json"
@@ -36,6 +37,7 @@ NS = {
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+    "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
 }
 
 
@@ -95,6 +97,7 @@ class InspectEditabilityTests(unittest.TestCase):
         required_names = {
             "build-editable-pptx",
             "convert-marp-to-editable-pptx",
+            "build-editable-pptx-with-latex",
             "build-flattened-pptx-explicitly",
         }
         self.assertTrue(required_names.issubset(by_name), sorted(by_name))
@@ -229,6 +232,14 @@ class InspectEditabilityTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, guidance)
 
+    def test_codex_and_claude_share_one_editable_output_contract(self) -> None:
+        """Keep harness differences limited to tooling, not deliverable quality."""
+
+        reference = EDITABLE_REFERENCE.read_text(encoding="utf-8")
+        for phrase in ["Codex와 Claude Code", "도구만 다르고", "산출물 계약", "동일"]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, reference)
+
     def test_pptxgenjs_smoke_is_cross_platform_and_checks_native_ooxml(self) -> None:
         """Require the installability claim to be exercised on all hosted desktop OSes."""
 
@@ -261,6 +272,32 @@ class InspectEditabilityTests(unittest.TestCase):
         lockfile = PPTXGENJS_LOCK.read_text(encoding="utf-8")
         self.assertIn("https://registry.npmjs.org/", lockfile)
         self.assertNotIn("artifactory.navercorp.com", lockfile)
+
+    def test_latex_guidance_requires_native_office_math_in_every_runtime(self) -> None:
+        """Prevent equations from becoming pictures or plain text in editable PPTX output."""
+
+        guidance = "\n".join(
+            [
+                SKILL.read_text(encoding="utf-8"),
+                EDITABLE_REFERENCE.read_text(encoding="utf-8"),
+                EQUATION_REFERENCE.read_text(encoding="utf-8"),
+            ]
+        )
+        for phrase in [
+            "Office Math (OMML)",
+            "m:oMath",
+            "a14:m",
+            "PptxGenJS 4.0.1",
+            "네이티브 수식 API",
+            "SVG/PNG",
+            "일반 텍스트",
+            "자동 폴백",
+            "--require-equations",
+            "PowerPoint에서 수식 편집 모드",
+            "Codex와 Claude Code",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, guidance)
 
     def test_html_and_pdf_build_routes_remain_available(self) -> None:
         """Editable PPTX guidance must not regress Marp HTML/PDF behavior."""
@@ -364,6 +401,48 @@ class InspectEditabilityTests(unittest.TestCase):
         self.assertEqual(report["totals"]["charts"], 1)
         self.assertEqual(report["totals"]["connectors"], 1)
         self.assertEqual(report["totals"]["text"], 2)
+
+    def test_native_office_math_is_counted_and_can_be_required(self) -> None:
+        slide = f"""<?xml version='1.0' encoding='UTF-8'?>
+<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}' xmlns:m='{NS['m']}' xmlns:a14='http://schemas.microsoft.com/office/drawing/2010/main' xmlns:mc='http://schemas.openxmlformats.org/markup-compatibility/2006'>
+  <p:cSld><p:spTree>
+    <p:sp><p:nvSpPr/><p:txBody><a:p><a:r><a:t>Bayes rule</a:t></a:r></a:p></p:txBody></p:sp>
+    <mc:AlternateContent><mc:Choice Requires='a14'>
+      <p:sp><p:nvSpPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a14:m>
+        <m:oMathPara><m:oMath><m:f><m:num><m:r><m:t>P(A|B)</m:t></m:r></m:num><m:den><m:r><m:t>P(B)</m:t></m:r></m:den></m:f></m:oMath></m:oMathPara>
+      </a14:m></a:p></p:txBody></p:sp>
+    </mc:Choice><mc:Fallback><p:sp><p:nvSpPr/><p:txBody><a:p/></p:txBody></p:sp></mc:Fallback></mc:AlternateContent>
+  </p:spTree></p:cSld>
+</p:sld>"""
+
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "native-equation.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-editable", "--require-equations", "1")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = parse_report(result)
+        self.assertEqual(report["slides"][0]["equations"], 1)
+        self.assertEqual(report["totals"]["equations"], 1)
+
+    def test_missing_required_native_equation_fails(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
+  <p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>Not native math</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "missing-equation.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-equations", "1")
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = parse_report(result)
+        self.assertEqual(report["totals"]["equations"], 0)
+        self.assertIn("expected at least 1", " ".join(report["failures"]))
+
+    def test_negative_required_equation_count_is_rejected(self) -> None:
+        result = run_inspector(Path("unused.pptx"), "--require-equations", "-1")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("non-negative", result.stderr)
 
     def test_invalid_zip_returns_input_error(self) -> None:
         with TemporaryDirectory() as directory:

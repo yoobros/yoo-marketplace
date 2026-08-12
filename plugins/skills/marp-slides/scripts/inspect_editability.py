@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
 C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
 
 TAG_NAMES = {
     "shapes": f"{{{P_NS}}}sp",
@@ -28,14 +29,22 @@ TAG_NAMES = {
     "charts": f"{{{C_NS}}}chart",
     "images": f"{{{P_NS}}}pic",
     "connectors": f"{{{P_NS}}}cxnSp",
+    "equations": f"{{{M_NS}}}oMath",
 }
 
 SLIDE_NAME = re.compile(r"^ppt/slides/slide(\d+)\.xml$")
-COUNT_KEYS = ("shapes", "text", "tables", "charts", "images", "connectors")
+COUNT_KEYS = ("shapes", "text", "tables", "charts", "images", "connectors", "equations")
 
 
 class InvalidPptxError(ValueError):
     """Raised when the input is not a readable PPTX slide package."""
+
+
+def _nonnegative_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("COUNT must be non-negative")
+    return parsed
 
 
 def _slide_sort_key(name: str) -> tuple[int, str]:
@@ -69,7 +78,7 @@ def _inspect_slide(package: zipfile.ZipFile, name: str) -> dict[str, object]:
     # text can occur in a shape, table, chart, or other OOXML object. The
     # explicit p:pic == 1 rule avoids rejecting slides with multiple images.
     editable_count = sum(
-        counts[key] for key in ("shapes", "text", "tables", "charts", "connectors")
+        counts[key] for key in ("shapes", "text", "tables", "charts", "connectors", "equations")
     )
     image_only = counts["images"] == 1 and editable_count == 0
     return {"name": name, **counts, "image_only": image_only}
@@ -129,6 +138,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="return exit code 1 when the editability contract is not met",
     )
+    parser.add_argument(
+        "--require-equations",
+        type=_nonnegative_int,
+        metavar="COUNT",
+        help="return exit code 1 unless at least COUNT native Office Math objects exist",
+    )
     return parser
 
 
@@ -136,12 +151,22 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         report = inspect_pptx(args.deck)
+        equations_missing = (
+            args.require_equations is not None
+            and int(report["totals"]["equations"]) < args.require_equations
+        )
+        if equations_missing:
+            report["failures"].append(
+                f"deck has {report['totals']['equations']} native equations; "
+                f"expected at least {args.require_equations}"
+            )
         _write_report(report, args.json_path)
     except InvalidPptxError as exc:
         print(f"invalid PPTX input: {exc}", file=sys.stderr)
         return 2
 
-    return 1 if args.require_editable and not report["editable"] else 0
+    editable_missing = args.require_editable and not report["editable"]
+    return 1 if editable_missing or equations_missing else 0
 
 
 if __name__ == "__main__":
