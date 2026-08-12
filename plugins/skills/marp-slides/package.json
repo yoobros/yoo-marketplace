@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "smoke:pptxgenjs": "node scripts/smoke_pptxgenjs.mjs pptxgenjs-smoke.pptx"
+    "smoke:pptxgenjs": "node scripts/smoke_pptxgenjs.mjs"
   },
   "devDependencies": {
     "pptxgenjs": "4.0.1"

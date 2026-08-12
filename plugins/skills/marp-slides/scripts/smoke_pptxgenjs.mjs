@@ -1,4 +1,6 @@
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 // PptxGenJS 4.0.1 advertises an ESM entry whose .js file lacks a package
 // `type: module` marker. Select its supported CommonJS export explicitly so
@@ -6,7 +8,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const pptxgen = require("pptxgenjs");
 
-const output = process.argv[2] ?? "pptxgenjs-smoke.pptx";
+const output = process.argv[2] ?? join(tmpdir(), `marp-slides-pptxgenjs-smoke-${process.pid}.pptx`);
 const pptx = new pptxgen();
 pptx.layout = "LAYOUT_WIDE";
 pptx.author = "marp-slides smoke";
