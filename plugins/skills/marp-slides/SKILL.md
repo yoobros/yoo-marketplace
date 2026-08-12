@@ -39,8 +39,12 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 - `marp --pptx`는 마지막 행처럼 사용자가 보기 전용·비편집형·픽셀 충실도를 **명시한 경우에만**
   허용한다. 편집형 산출물에 조용히 폴백하지 않는다.
 - Codex에서 편집형 PPTX는 반드시 `presentations:Presentations` 스킬과
-  `@oai/artifact-tool`을 사용해 생성한다. 전용 네이티브 생성 도구가 없는 런타임에서는
-  그 한계를 알리고, 비편집형 폴백의 동의를 받은 뒤에만 `marp --pptx`를 사용한다.
+  `@oai/artifact-tool`을 사용해 생성한다.
+- Claude Code에서는 Node.js 18+와 `PptxGenJS`를 사용해 같은 의미 객체를 네이티브로
+  재구성한다. 설치·버전 고정·실행·검증은 [references/pptxgenjs.md](references/pptxgenjs.md)를
+  따른다. 생성 실패를 `marp --pptx`로 자동 폴백하지 않는다.
+- 그 밖의 런타임에 네이티브 생성 도구가 없으면 한계를 알리고, 비편집형 폴백의 동의를
+  받은 뒤에만 `marp --pptx`를 사용한다.
 - 객체 매핑, Codex 생성 절차, 구조/시각 검증의 상세는
   [references/editable-pptx.md](references/editable-pptx.md)를 읽는다.
 
@@ -66,6 +70,7 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 |------|------|------|------|
 | Node.js ≥ 18 + npm | marp-cli 실행 | `node -v` | https://nodejs.org 또는 `brew install node` |
 | `@marp-team/marp-cli` | 빌드/미리보기 | `npx marp --version` | 프로젝트 로컬 `npm install @marp-team/marp-cli` (전역 설치 불필요) |
+| `PptxGenJS` 4.0.1 | Claude Code에서 편집형 PPTX 생성 | `npm ls pptxgenjs` | 프로젝트 로컬 `npm install --save-dev pptxgenjs@4.0.1` |
 | Chromium 계열 브라우저 | PDF/PPTX 빌드 (marp 이 headless 로 사용) | Chrome/Edge 설치 여부 | 대부분 이미 있음. 없으면 `npx puppeteer browsers install chrome` 후 `CHROME_PATH` 지정 |
 | ImageMagick 또는 poppler | PDF 검증 (페이지→PNG) | `magick -version` / `pdftoppm -v` | `brew install imagemagick` 또는 `brew install poppler` (Linux: `apt install imagemagick poppler-utils`) |
 

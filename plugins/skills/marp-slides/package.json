@@ -1,0 +1,8 @@
+{
+  "name": "marp-slides-native-pptx-smoke",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}

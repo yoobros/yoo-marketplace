@@ -25,6 +25,7 @@
     "expected": "Builds a native editable PowerPoint rather than using Marp's flattened export. The delivered deck keeps information-bearing text, tables, charts, shapes, and connectors editable; passes OOXML structure inspection; and passes full-slide render QA.",
     "assertions": [
       "Uses native text objects and native table/chart objects whenever the source contains those semantics; information slides are not flattened into full-slide images",
+      "In Claude Code, uses pinned PptxGenJS rather than vague equivalent-tool guidance or an automatic flattened fallback",
       "Does not use marp --pptx as the final editable PPTX route",
       "Runs OOXML inspection with inspect_editability.py --require-editable and reports a passing result before delivery",
       "Uses one message per slide, concise presentation-ready copy, and speaker notes for supporting detail, evidence, and sources",
@@ -38,6 +39,7 @@
     "expected": "Uses the Marp deck as the content, order, and design-token source while reconstructing it as a native editable PPTX. Tables and charts remain editable, and both structural and visual QA are completed.",
     "assertions": [
       "Reconstructs the Marp source as native text, native table/chart, editable shapes, and connectors instead of treating marp --pptx as an editable conversion",
+      "In Claude Code, uses pinned PptxGenJS rather than vague equivalent-tool guidance or an automatic flattened fallback",
       "Keeps chart data editable in a native chart when supported, or uses editable shapes with preserved values and sources when a native chart is not appropriate",
       "Runs OOXML inspection with inspect_editability.py --require-editable and reports a passing result before delivery",
       "Uses one message per slide, concise presentation-ready copy, and speaker notes for supporting detail, evidence, and sources",

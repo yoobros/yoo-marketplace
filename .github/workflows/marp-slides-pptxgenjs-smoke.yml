@@ -1,0 +1,41 @@
+name: marp-slides-pptxgenjs-smoke
+
+on:
+  pull_request:
+    paths:
+      - "plugins/skills/marp-slides/**"
+      - ".github/workflows/marp-slides-pptxgenjs-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  native-pptx:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: plugins/skills/marp-slides/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned PptxGenJS
+        working-directory: plugins/skills/marp-slides
+        run: npm ci && npm ls pptxgenjs@4.0.1
+      - name: Record dependency advisories
+        working-directory: plugins/skills/marp-slides
+        run: npm audit --audit-level=critical
+      - name: Generate native smoke deck
+        run: node plugins/skills/marp-slides/scripts/smoke_pptxgenjs.mjs "$RUNNER_TEMP/pptxgenjs-smoke.pptx"
+      - name: Inspect native OOXML
+        run: >-
+          python plugins/skills/marp-slides/scripts/inspect_editability.py
+          "$RUNNER_TEMP/pptxgenjs-smoke.pptx" --require-editable

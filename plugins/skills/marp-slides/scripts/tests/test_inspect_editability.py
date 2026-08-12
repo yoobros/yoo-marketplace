@@ -18,9 +18,13 @@ SCRIPT = (
 )
 SKILL = Path(__file__).resolve().parents[2] / "SKILL.md"
 EDITABLE_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "editable-pptx.md"
+PPTXGENJS_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "pptxgenjs.md"
 EVALS = Path(__file__).resolve().parents[2] / "evals" / "evals.json"
 PLUGIN_MANIFEST = Path(__file__).resolve().parents[4] / ".claude-plugin" / "plugin.json"
 MARKETPLACE_MANIFEST = Path(__file__).resolve().parents[5] / ".claude-plugin" / "marketplace.json"
+PPTXGENJS_SMOKE = Path(__file__).resolve().parents[1] / "smoke_pptxgenjs.mjs"
+PPTXGENJS_LOCK = Path(__file__).resolve().parents[2] / "package-lock.json"
+PPTXGENJS_WORKFLOW = Path(__file__).resolve().parents[5] / ".github" / "workflows" / "marp-slides-pptxgenjs-smoke.yml"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
 INSPECTOR = importlib.util.module_from_spec(SPEC)
@@ -200,6 +204,62 @@ class InspectEditabilityTests(unittest.TestCase):
         ]:
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, reference)
+
+    def test_claude_code_uses_pptxgenjs_as_the_native_editable_engine(self) -> None:
+        """Keep Claude Code on a concrete native route instead of vague fallback advice."""
+
+        guidance = "\n".join(
+            [
+                SKILL.read_text(encoding="utf-8"),
+                EDITABLE_REFERENCE.read_text(encoding="utf-8"),
+                PPTXGENJS_REFERENCE.read_text(encoding="utf-8"),
+            ]
+        )
+        for phrase in [
+            "Claude Code",
+            "PptxGenJS",
+            "Node.js 18",
+            "pptxgenjs@4.0.1",
+            "package-lock.json",
+            "npm ci",
+            "자동 폴백",
+            "LibreOffice",
+            "발표자 노트",
+        ]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, guidance)
+
+    def test_pptxgenjs_smoke_is_cross_platform_and_checks_native_ooxml(self) -> None:
+        """Require the installability claim to be exercised on all hosted desktop OSes."""
+
+        workflow = PPTXGENJS_WORKFLOW.read_text(encoding="utf-8")
+        smoke = PPTXGENJS_SMOKE.read_text(encoding="utf-8")
+        for runner in ["macos-latest", "ubuntu-latest", "windows-latest"]:
+            with self.subTest(runner=runner):
+                self.assertIn(runner, workflow)
+        for phrase in ["node-version: 18", "pptxgenjs@4.0.1", "smoke_pptxgenjs.mjs", "inspect_editability.py", "--require-editable"]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, workflow)
+        for phrase in ["addText", "addChart", "addTable", "addShape", "addNotes", "writeFile"]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, smoke)
+
+    def test_pptxgenjs_guidance_discloses_current_image_parser_advisories(self) -> None:
+        """Do not turn a successful install smoke into a silent supply-chain claim."""
+
+        reference = PPTXGENJS_REFERENCE.read_text(encoding="utf-8")
+        workflow = PPTXGENJS_WORKFLOW.read_text(encoding="utf-8")
+        for phrase in ["npm audit", "GHSA-w3rx-r6r6-pgpr", "GHSA-5p2g-fcmc-qvqq", "비신뢰"]:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, reference)
+        self.assertIn("npm audit --audit-level=critical", workflow)
+
+    def test_pptxgenjs_lockfile_is_portable_outside_the_corporate_network(self) -> None:
+        """Keep public hosted runners from resolving dependencies through a private registry."""
+
+        lockfile = PPTXGENJS_LOCK.read_text(encoding="utf-8")
+        self.assertIn("https://registry.npmjs.org/", lockfile)
+        self.assertNotIn("artifactory.navercorp.com", lockfile)
 
     def test_html_and_pdf_build_routes_remain_available(self) -> None:
         """Editable PPTX guidance must not regress Marp HTML/PDF behavior."""
