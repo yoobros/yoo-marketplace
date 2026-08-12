@@ -2,7 +2,8 @@
 name: marp-slides
 description: >
   Marp(Markdown Presentation)로 슬라이드를 만들고 관리한다. 자연어로 슬라이드 생성·수정·빌드를
-  요청하면 .md 파일을 편집하고 marp-cli로 HTML/PDF/PPTX를 빌드한다. LaTeX 수식, Mermaid
+  요청하면 .md 파일을 편집하고 Marp로 HTML/PDF를 빌드하며, PPTX는 기본적으로 네이티브
+  편집형 객체로 만든다. LaTeX 수식, Mermaid
   다이어그램, 논문 스타일 footnote/citation, 커스텀 테마(번들 네이버 테마 또는 브랜드
   CSS/디자인 가이드 기반 신규 테마)를 지원한다.
   "슬라이드 만들어줘", "발표자료", "프레젠테이션", "ppt", "marp", "슬라이드에 ~ 추가해줘",
@@ -16,6 +17,41 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 > 번들 파일: `assets/slides-template.md` (한국어 덱 골격+레이아웃 CSS),
 > `assets/slides-template-en.md` (영어 덱 골격 — 동일 구조), `assets/naver.css` (네이버 테마),
 > `assets/naver-logo*.png`. 복사 예: `cp <스킬디렉토리>/assets/slides-template.md marp/src/slides.md`
+
+## PPTX 산출물 라우팅
+
+**PPTX는 기본적으로 편집 가능한 네이티브 객체**로 제공한다. 제목·본문은 텍스트 객체,
+표·차트·정보성 다이어그램은 각각 편집 가능한 표·차트·도형/커넥터로 재구성한다. 사진,
+로고, 질감, 복잡한 장식만 래스터로 유지할 수 있다. LaTeX 수식은 PowerPoint의 네이티브
+Office Math (OMML) 수식 객체로 만들어 수식 편집기에서 수정할 수 있어야 한다.
+
+편집형 PPTX는 **한 슬라이드에 하나의 메시지**만 전면에 두고, 화면 문구는 발표용으로 간결하게
+다듬는다. 근거·세부 수치·출처는 발표자 노트에 보존한다. 레이아웃은 의도적인 여백을 사용하되
+과도한 빈 공간을 남기지 않는다.
+
+| 요청/산출물 | 생성 경로 | 전달 전 검증 |
+|---|---|---|
+| HTML, PDF, Marp preview | 기존 Marp CLI | 아래 PDF 검증 절차 |
+| 일반 PPTX, PowerPoint, 수정 가능한 발표자료 | 네이티브 PPTX 객체 생성 | `inspect_editability.py --require-editable` + 모든 슬라이드 렌더 QA |
+| 보기 전용, 수정 불필요, 비편집형, 픽셀 동일/충실 PPTX | 명시적 flattened Marp export | 편집 불가(슬라이드가 이미지 기반)임을 전달 전에 고지 |
+
+- "빨리", "PPTX로"만으로는 비편집형 의도가 아니다. 수정 가능 여부를 확인할 수 없으면
+  네이티브 편집형을 기본으로 한다.
+- `marp --pptx`는 마지막 행처럼 사용자가 보기 전용·비편집형·픽셀 충실도를 **명시한 경우에만**
+  허용한다. 편집형 산출물에 조용히 폴백하지 않는다.
+- Codex에서 편집형 PPTX는 반드시 `presentations:Presentations` 스킬과
+  `@oai/artifact-tool`을 사용해 생성한다.
+- Claude Code에서는 Node.js 18+와 `PptxGenJS`를 사용해 같은 의미 객체를 네이티브로
+  재구성한다. 설치·버전 고정·실행·검증은 [references/pptxgenjs.md](references/pptxgenjs.md)를
+  따른다. 생성 실패를 `marp --pptx`로 자동 폴백하지 않는다.
+- Claude Code의 `slide-builder` 같은 위임 에이전트도 작업 시작 시 설치된 이 스킬의 최신
+  본문을 읽어야 하며, 에이전트의 정적 지침이 이 편집형 산출물 계약을 약화할 수 없다.
+- 그 밖의 런타임에 네이티브 생성 도구가 없으면 한계를 알리고, 비편집형 폴백의 동의를
+  받은 뒤에만 `marp --pptx`를 사용한다.
+- 객체 매핑, Codex 생성 절차, 구조/시각 검증의 상세는
+  [references/editable-pptx.md](references/editable-pptx.md)를 읽는다.
+- LaTeX가 하나라도 있으면 [references/editable-equations.md](references/editable-equations.md)를
+  읽고 네이티브 수식 개수와 PowerPoint 편집 모드를 검증한다.
 
 ## 새 덱을 만드는 최단 경로
 
@@ -39,6 +75,7 @@ Marp 기반 프레젠테이션을 자연어로 만들고 관리하는 스킬입�
 |------|------|------|------|
 | Node.js ≥ 18 + npm | marp-cli 실행 | `node -v` | https://nodejs.org 또는 `brew install node` |
 | `@marp-team/marp-cli` | 빌드/미리보기 | `npx marp --version` | 프로젝트 로컬 `npm install @marp-team/marp-cli` (전역 설치 불필요) |
+| `PptxGenJS` 4.0.1 | Claude Code에서 편집형 PPTX 생성 | `npm ls pptxgenjs` | 프로젝트 로컬 `npm install --save-dev pptxgenjs@4.0.1` |
 | Chromium 계열 브라우저 | PDF/PPTX 빌드 (marp 이 headless 로 사용) | Chrome/Edge 설치 여부 | 대부분 이미 있음. 없으면 `npx puppeteer browsers install chrome` 후 `CHROME_PATH` 지정 |
 | ImageMagick 또는 poppler | PDF 검증 (페이지→PNG) | `magick -version` / `pdftoppm -v` | `brew install imagemagick` 또는 `brew install poppler` (Linux: `apt install imagemagick poppler-utils`) |
 
@@ -76,8 +113,8 @@ marp/
      "scripts": {
        "build": "marp src/slides.md --html --theme-set themes/<테마명>/<테마명>.css --output dist/slides.html",
        "build:pdf": "marp src/slides.md --html --theme-set themes/<테마명>/<테마명>.css --pdf --output dist/slides.pdf",
-       "build:pptx": "marp src/slides.md --html --theme-set themes/<테마명>/<테마명>.css --pptx --output dist/slides.pptx",
-       "build:all": "npm run build && npm run build:pdf && npm run build:pptx",
+       "build:all": "npm run build && npm run build:pdf",
+       "build:pptx:flattened": "marp src/slides.md --html --theme-set themes/<테마명>/<테마명>.css --pptx --output dist/slides.pptx",
        "preview": "marp -s --html src/ --theme-set themes/<테마명>/<테마명>.css"
      }
    }
@@ -159,7 +196,7 @@ accent 색: `--naver-green #03C75A`.
 5. **현재 상태 & 로드맵** — ✅ 완료 / 🚀 차기 과제 2단
 6. **감사** (`lead`) — 마지막 장 하단에 mermaid `<script>` 블록
 
-한 슬라이드 한 메시지. 본문 bullet 은 3~5개, 핵심어만 **볼드**. 수치·근거는
+한 슬라이드에 하나의 메시지. 본문 bullet 은 3~5개, 핵심어만 **볼드**. 수치·근거는
 `.muted` 캡션으로 분리해 본문을 가볍게 유지한다.
 
 ### 발표 언어 (한국어/영어)
@@ -210,6 +247,10 @@ $$
 P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
 $$
 ```
+
+HTML/PDF에서는 위 LaTeX 원본을 렌더한다. 편집형 PPTX에서는 화면 캡처, SVG/PNG 또는 일반
+텍스트로 바꾸지 않고 Office Math(OMML) 객체로 변환한다. 자세한 절차와 실패 처리는
+[references/editable-equations.md](references/editable-equations.md)를 따른다.
 
 ### Mermaid 다이어그램
 
@@ -288,8 +329,8 @@ Attention 메커니즘<sup>[1]</sup>은 ...
 |------|--------|
 | `npm run build` | `dist/slides.html` |
 | `npm run build:pdf` | `dist/slides.pdf` |
-| `npm run build:pptx` | `dist/slides.pptx` |
-| `npm run build:all` | 위 세 가지 모두 |
+| `npm run build:all` | HTML과 PDF만 (PPTX 기본 경로를 뜻하지 않음) |
+| `npm run build:pptx:flattened` | 명시적 비편집형 `dist/slides.pptx` |
 | `npm run preview` | localhost:8080 실시간 미리보기 (`--html` 포함 필수) |
 
 또는 npx로 직접:
@@ -297,6 +338,21 @@ Attention 메커니즘<sup>[1]</sup>은 ...
 ```bash
 npx @marp-team/marp-cli src/slides.md --html --theme-set themes/<테마명>/<테마명>.css --output dist/slides.html
 ```
+
+### 편집형 PPTX 생성·검증 루프
+
+편집형 PPTX 요청에서는 원본 Marp를 콘텐츠·순서·시각 토큰의 기준으로만 사용하고, 그 내용을
+네이티브 PowerPoint 객체로 재구성한다. `references/editable-pptx.md`의 순서대로 인벤토리,
+재구성, 구조 검사, 모든 슬라이드 렌더, 수정과 재검사를 반복한다.
+
+```bash
+python3 <스킬디렉토리>/scripts/inspect_editability.py dist/slides.pptx \
+  --require-editable --json dist/editability-report.json
+```
+
+검사가 실패하거나 어느 슬라이드든 렌더에서 겹침·잘림·예상치 못한 줄바꿈이 보이면 산출물을
+전달하지 않는다. 해당 슬라이드를 네이티브 객체로 고친 뒤 구조 검사와 **모든 슬라이드** 렌더
+QA를 다시 실행한다.
 
 ## 빌드 결과 검증 (다이어그램이 있으면 PDF 기준으로)
 

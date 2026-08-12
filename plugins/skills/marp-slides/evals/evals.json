@@ -10,6 +10,18 @@
     "expected": "Adds a LaTeX block equation for cross-entropy loss to the third slide"
   },
   {
+    "name": "build-editable-pptx-with-latex",
+    "prompt": "LaTeX 수식이 포함된 이 Marp 덱을 편집 가능한 PPTX로 만들어줘. PowerPoint에서 수식도 직접 고칠 수 있어야 해.",
+    "expected": "Preserves every LaTeX formula as a native editable PowerPoint Office Math equation rather than an image, SVG, or plain-text approximation.",
+    "assertions": [
+      "Counts inline and block LaTeX formulas in the Marp source before conversion",
+      "Creates native Office Math objects containing a14:m and m:oMath or m:oMathPara; does not claim SVG, PNG, or plain text is an editable equation",
+      "Runs inspect_editability.py with --require-editable and --require-equations set to the source equation count",
+      "Opens the result in Microsoft PowerPoint and verifies equation edit mode and structured editing before delivery",
+      "Does not automatically fall back to non-editable equation images when native equation creation or verification is unavailable"
+    ]
+  },
+  {
     "name": "add-mermaid-diagram",
     "prompt": "데이터 파이프라인 플로우차트를 mermaid로 추가해줘",
     "expected": "Adds a new slide with <pre class=\"mermaid\"> flowchart, no indentation"
@@ -20,9 +32,42 @@
     "expected": "Adds <sup>[N]</sup> in text and <div class=\"footnote\"> block at bottom with paper citation"
   },
   {
-    "name": "build-pptx",
-    "prompt": "슬라이드를 pptx로 빌드해줘",
-    "expected": "Runs npm run build:pptx or equivalent marp-cli command to generate dist/slides.pptx"
+    "name": "build-editable-pptx",
+    "prompt": "pptx로 빨리 빌드해줘. 나중에 문구와 표를 수정할 거야.",
+    "expected": "Builds a native editable PowerPoint rather than using Marp's flattened export. The delivered deck keeps information-bearing text, tables, charts, shapes, and connectors editable; passes OOXML structure inspection; and passes full-slide render QA.",
+    "assertions": [
+      "Uses native text objects and native table/chart objects whenever the source contains those semantics; information slides are not flattened into full-slide images",
+      "In Claude Code, uses pinned PptxGenJS rather than vague equivalent-tool guidance or an automatic flattened fallback",
+      "Does not use marp --pptx as the final editable PPTX route",
+      "Runs OOXML inspection with inspect_editability.py --require-editable and reports a passing result before delivery",
+      "Uses one message per slide, concise presentation-ready copy, and speaker notes for supporting detail, evidence, and sources",
+      "Chooses each semantic visual by meaning: schedule→Gantt, communication→sequential flow, trend→line, distribution→histogram, composition→pie/donut, comparison→bar/table, decision→matrix/flow",
+      "Runs render every slide QA at full size and fixes overlap, bounds invasion, clipping, title wrap, severe shrink, excessive whitespace, and undersized charts before delivery"
+    ]
+  },
+  {
+    "name": "convert-marp-to-editable-pptx",
+    "prompt": "이 Marp 덱을 PowerPoint로 변환해줘. 표와 차트 수치를 나중에 직접 수정할 수 있어야 해.",
+    "expected": "Uses the Marp deck as the content, order, and design-token source while reconstructing it as a native editable PPTX. Tables and charts remain editable, and both structural and visual QA are completed.",
+    "assertions": [
+      "Reconstructs the Marp source as native text, native table/chart, editable shapes, and connectors instead of treating marp --pptx as an editable conversion",
+      "In Claude Code, uses pinned PptxGenJS rather than vague equivalent-tool guidance or an automatic flattened fallback",
+      "Keeps chart data editable in a native chart when supported, or uses editable shapes with preserved values and sources when a native chart is not appropriate",
+      "Runs OOXML inspection with inspect_editability.py --require-editable and reports a passing result before delivery",
+      "Uses one message per slide, concise presentation-ready copy, and speaker notes for supporting detail, evidence, and sources",
+      "Chooses each semantic visual by meaning: schedule→Gantt, communication→sequential flow, trend→line, distribution→histogram, composition→pie/donut, comparison→bar/table, decision→matrix/flow",
+      "Runs render every slide QA at full size and fixes overlap, bounds invasion, clipping, title wrap, severe shrink, excessive whitespace, and undersized charts before delivery"
+    ]
+  },
+  {
+    "name": "build-flattened-pptx-explicitly",
+    "prompt": "픽셀 그대로면 되고 수정은 안 해도 돼. 보기 전용 PPTX로 내보내줘.",
+    "expected": "Allows the explicit flattened Marp PPTX route, discloses its editability limitation, and visually verifies every exported slide.",
+    "assertions": [
+      "Uses marp --pptx or npm run build:pptx:flattened because the user explicitly requested a view-only pixel-faithful export",
+      "Discloses before delivery that the deck is image-based and its text, tables, charts, and shapes are not individually editable in PowerPoint",
+      "Runs render every slide QA and fixes visible overlap, clipping, or unexpected title wrapping in the flattened output"
+    ]
   },
   {
     "name": "mermaid-pdf-no-clipping",
