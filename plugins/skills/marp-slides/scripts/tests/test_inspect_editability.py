@@ -25,6 +25,7 @@ PLUGIN_MANIFEST = Path(__file__).resolve().parents[4] / ".claude-plugin" / "plug
 MARKETPLACE_MANIFEST = Path(__file__).resolve().parents[5] / ".claude-plugin" / "marketplace.json"
 PPTXGENJS_SMOKE = Path(__file__).resolve().parents[1] / "smoke_pptxgenjs.mjs"
 PPTXGENJS_LOCK = Path(__file__).resolve().parents[2] / "package-lock.json"
+PPTXGENJS_PACKAGE = Path(__file__).resolve().parents[2] / "package.json"
 PPTXGENJS_WORKFLOW = Path(__file__).resolve().parents[5] / ".github" / "workflows" / "marp-slides-pptxgenjs-smoke.yml"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
@@ -38,20 +39,63 @@ NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
     "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
 }
 
 
-def make_pptx(path: Path, slide_xml: str, rels_xml: str | None = None) -> None:
-    """Create the smallest PPTX-like ZIP package needed by the inspector."""
+def _write_core_parts(package: zipfile.ZipFile, slide_names: list[str]) -> None:
+    content_types = """<?xml version='1.0' encoding='UTF-8'?>
+<Types xmlns='http://schemas.openxmlformats.org/package/2006/content-types'>
+  <Default Extension='rels' ContentType='application/vnd.openxmlformats-package.relationships+xml'/>
+  <Default Extension='xml' ContentType='application/xml'/>
+  <Override PartName='/ppt/presentation.xml' ContentType='application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml'/>
+  %s
+</Types>""" % "\n  ".join(
+        f"<Override PartName='/ppt/slides/{name}' ContentType='application/vnd.openxmlformats-officedocument.presentationml.slide+xml'/>"
+        for name in slide_names
+    )
+    root_rels = """<Relationships xmlns='http://schemas.openxmlformats.org/package/2006/relationships'>
+  <Relationship Id='rId1' Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument' Target='ppt/presentation.xml'/>
+</Relationships>"""
+    slide_ids = "".join(
+        f"<p:sldId id='{256 + index}' r:id='rId{index + 1}'/>"
+        for index, _ in enumerate(slide_names)
+    )
+    presentation = f"""<p:presentation xmlns:p='{NS['p']}' xmlns:r='{NS['r']}'>
+  <p:sldIdLst>{slide_ids}</p:sldIdLst>
+  <p:sldSz cx='12192000' cy='6858000'/>
+</p:presentation>"""
+    presentation_rels = """<Relationships xmlns='http://schemas.openxmlformats.org/package/2006/relationships'>%s</Relationships>""" % "".join(
+        f"<Relationship Id='rId{index + 1}' Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide' Target='slides/{name}'/>"
+        for index, name in enumerate(slide_names)
+    )
+
+    package.writestr("[Content_Types].xml", content_types)
+    package.writestr("_rels/.rels", root_rels)
+    package.writestr("ppt/presentation.xml", presentation)
+    package.writestr("ppt/_rels/presentation.xml.rels", presentation_rels)
+
+
+def make_pptx(
+    path: Path,
+    slide_xml: str,
+    rels_xml: str | None = None,
+    extra_parts: dict[str, str] | None = None,
+) -> None:
+    """Create the smallest valid PPTX package needed by the inspector."""
 
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as package:
+        _write_core_parts(package, ["slide1.xml"])
         package.writestr("ppt/slides/slide1.xml", slide_xml)
         if rels_xml is not None:
             package.writestr("ppt/slides/_rels/slide1.xml.rels", rels_xml)
+        for name, contents in (extra_parts or {}).items():
+            package.writestr(name, contents)
 
 
 def make_slides_pptx(path: Path, slides: dict[str, str]) -> None:
     with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as package:
+        _write_core_parts(package, list(slides))
         for name, xml in slides.items():
             package.writestr(f"ppt/slides/{name}", xml)
 
@@ -256,6 +300,15 @@ class InspectEditabilityTests(unittest.TestCase):
                 self.assertIn(phrase, smoke)
         self.assertIn("createRequire", smoke)
 
+    def test_pptxgenjs_package_exposes_local_smoke_command(self) -> None:
+        """Keep the same native smoke check directly runnable before a PR."""
+
+        package = json.loads(PPTXGENJS_PACKAGE.read_text(encoding="utf-8"))
+        self.assertEqual(
+            package.get("scripts", {}).get("smoke:pptxgenjs"),
+            "node scripts/smoke_pptxgenjs.mjs",
+        )
+
     def test_pptxgenjs_guidance_discloses_current_image_parser_advisories(self) -> None:
         """Do not turn a successful install smoke into a silent supply-chain claim."""
 
@@ -354,6 +407,41 @@ class InspectEditabilityTests(unittest.TestCase):
         self.assertTrue(report["slides"][0]["image_only"])
         self.assertIn("slide1.xml", " ".join(report["failures"]))
 
+    def test_two_picture_flattened_slide_is_rejected(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
+  <p:cSld><p:spTree>
+    <p:pic><p:spPr><a:xfrm><a:off x='0' y='0'/><a:ext cx='12192000' cy='6858000'/></a:xfrm></p:spPr></p:pic>
+    <p:pic><p:spPr><a:xfrm><a:off x='100000' y='100000'/><a:ext cx='500000' cy='500000'/></a:xfrm></p:spPr></p:pic>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "two-pictures.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-editable")
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = parse_report(result)
+        self.assertTrue(report["slides"][0]["image_only"])
+        self.assertEqual(report["slides"][0]["full_slide_images"], 1)
+
+    def test_full_slide_picture_plus_empty_decorative_shape_is_rejected(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
+  <p:cSld><p:spTree>
+    <p:pic><p:spPr><a:xfrm><a:off x='0' y='0'/><a:ext cx='12192000' cy='6858000'/></a:xfrm></p:spPr></p:pic>
+    <p:sp><p:nvSpPr/><p:spPr/></p:sp>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "picture-and-decoration.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-editable")
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = parse_report(result)
+        self.assertTrue(report["slides"][0]["image_only"])
+        self.assertEqual(report["slides"][0]["shapes"], 1)
+        self.assertEqual(report["slides"][0]["full_slide_images"], 1)
+
     def test_one_picture_with_editable_text_is_not_image_only(self) -> None:
         slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
   <p:cSld><p:spTree>
@@ -391,7 +479,16 @@ class InspectEditabilityTests(unittest.TestCase):
 
         with TemporaryDirectory() as directory:
             deck = Path(directory) / "native-objects.pptx"
-            make_pptx(deck, slide, rels)
+            make_pptx(
+                deck,
+                slide,
+                rels,
+                {
+                    "ppt/charts/chart1.xml": (
+                        f"<c:chartSpace xmlns:c='{NS['c']}'><c:chart/></c:chartSpace>"
+                    )
+                },
+            )
             result = run_inspector(deck, "--require-editable")
 
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -401,6 +498,46 @@ class InspectEditabilityTests(unittest.TestCase):
         self.assertEqual(report["totals"]["charts"], 1)
         self.assertEqual(report["totals"]["connectors"], 1)
         self.assertEqual(report["totals"]["text"], 2)
+
+    def test_dangling_chart_relationship_is_invalid(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}' xmlns:c='{NS['c']}' xmlns:r='{NS['r']}'>
+  <p:cSld><p:spTree>
+    <p:sp><p:txBody><a:p><a:r><a:t>Broken chart</a:t></a:r></a:p></p:txBody></p:sp>
+    <p:graphicFrame><a:graphic><a:graphicData><c:chart r:id='rIdChart'/></a:graphicData></a:graphic></p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        rels = """<Relationships xmlns='http://schemas.openxmlformats.org/package/2006/relationships'>
+  <Relationship Id='rIdChart' Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart' Target='../charts/missing.xml'/>
+</Relationships>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "dangling-chart.pptx"
+            make_pptx(deck, slide, rels)
+            result = run_inspector(deck, "--require-editable")
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("chart", result.stderr.lower())
+
+    def test_absolute_chart_relationship_target_is_resolved(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}' xmlns:c='{NS['c']}' xmlns:r='{NS['r']}'>
+  <p:cSld><p:spTree>
+    <p:sp><p:txBody><a:p><a:r><a:t>Native chart</a:t></a:r></a:p></p:txBody></p:sp>
+    <p:graphicFrame><a:graphic><a:graphicData><c:chart r:id='rIdChart'/></a:graphicData></a:graphic></p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        rels = """<Relationships xmlns='http://schemas.openxmlformats.org/package/2006/relationships'>
+  <Relationship Id='rIdChart' Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart' Target='/ppt/charts/chart1.xml'/>
+</Relationships>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "absolute-chart-target.pptx"
+            make_pptx(
+                deck,
+                slide,
+                rels,
+                {"ppt/charts/chart1.xml": f"<c:chartSpace xmlns:c='{NS['c']}'/>"},
+            )
+            result = run_inspector(deck, "--require-editable")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_native_office_math_is_counted_and_can_be_required(self) -> None:
         slide = f"""<?xml version='1.0' encoding='UTF-8'?>
@@ -439,6 +576,21 @@ class InspectEditabilityTests(unittest.TestCase):
         self.assertEqual(report["totals"]["equations"], 0)
         self.assertIn("expected at least 1", " ".join(report["failures"]))
 
+    def test_office_math_without_a14_wrapper_is_not_counted(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}' xmlns:m='{NS['m']}'>
+  <p:cSld><p:spTree>
+    <p:sp><p:txBody><a:p><a:r><a:t>Fake equation marker</a:t></a:r><m:oMath><m:r><m:t>x</m:t></m:r></m:oMath></a:p></p:txBody></p:sp>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "invalid-omml-wrapper.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-equations", "1")
+
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = parse_report(result)
+        self.assertEqual(report["totals"]["equations"], 0)
+
     def test_negative_required_equation_count_is_rejected(self) -> None:
         result = run_inspector(Path("unused.pptx"), "--require-equations", "-1")
         self.assertEqual(result.returncode, 2)
@@ -452,6 +604,19 @@ class InspectEditabilityTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2)
         self.assertIn("invalid", result.stderr.lower())
+
+    def test_zip_lacking_core_pptx_parts_returns_input_error(self) -> None:
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "slides-only.pptx"
+            with zipfile.ZipFile(deck, "w") as package:
+                package.writestr(
+                    "ppt/slides/slide1.xml",
+                    f"<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'/>",
+                )
+            result = run_inspector(deck)
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("core", result.stderr.lower())
 
     def test_runtime_zip_read_error_returns_input_error(self) -> None:
         for error in (RuntimeError("unsupported ZIP"), NotImplementedError("ZIP read unavailable")):
