@@ -9,7 +9,8 @@
   "plugins": [
     {
       "name": "marp-slides",
-      "description": "Marp로 슬라이드를 자연어로 생성·수정·빌드. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들, 임의 브랜드 CSS/디자인 가이드로 커스텀 테마 제작 지원 (Claude Code·Codex 겸용)",
+      "version": "1.2.0",
+      "description": "Marp로 슬라이드를 자연어로 생성·수정·빌드하고 편집 가능한 PowerPoint(PPTX)를 기본 제공. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들, 임의 브랜드 CSS/디자인 가이드로 커스텀 테마 제작 지원 (Claude Code·Codex 겸용)",
       "author": {
         "name": "swyo",
         "email": "l22491360@gmail.com"

@@ -18,6 +18,9 @@ SCRIPT = (
 )
 SKILL = Path(__file__).resolve().parents[2] / "SKILL.md"
 EDITABLE_REFERENCE = Path(__file__).resolve().parents[2] / "references" / "editable-pptx.md"
+EVALS = Path(__file__).resolve().parents[2] / "evals" / "evals.json"
+PLUGIN_MANIFEST = Path(__file__).resolve().parents[4] / ".claude-plugin" / "plugin.json"
+MARKETPLACE_MANIFEST = Path(__file__).resolve().parents[5] / ".claude-plugin" / "marketplace.json"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
 INSPECTOR = importlib.util.module_from_spec(SPEC)
@@ -61,6 +64,67 @@ def parse_report(result: subprocess.CompletedProcess[str]) -> dict:
 
 
 class InspectEditabilityTests(unittest.TestCase):
+    def test_plugin_metadata_advertises_editable_powerpoint_at_version_1_2_0(self) -> None:
+        """Catch stale discovery metadata that still presents flattened PPTX as the feature."""
+
+        plugin = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+        marketplace = json.loads(MARKETPLACE_MANIFEST.read_text(encoding="utf-8"))
+        entry = next(item for item in marketplace["plugins"] if item["name"] == "marp-slides")
+
+        self.assertEqual(plugin["version"], "1.2.0")
+        self.assertEqual(entry["version"], "1.2.0")
+        self.assertIn("editable", plugin["description"].lower())
+        self.assertIn("편집", entry["description"])
+
+        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "NAVER", "CSS", "Claude Code", "Codex"]:
+            with self.subTest(manifest="plugin", keyword=keyword):
+                self.assertIn(keyword, plugin["description"])
+        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "네이버", "CSS", "Claude Code", "Codex"]:
+            with self.subTest(manifest="marketplace", keyword=keyword):
+                self.assertIn(keyword, entry["description"])
+
+    def test_pptx_evals_cover_editable_defaults_conversion_and_explicit_flattening(self) -> None:
+        """Keep all three PPTX routing outcomes measurable in the eval corpus."""
+
+        evals = json.loads(EVALS.read_text(encoding="utf-8"))
+        by_name = {case["name"]: case for case in evals}
+        required_names = {
+            "build-editable-pptx",
+            "convert-marp-to-editable-pptx",
+            "build-flattened-pptx-explicitly",
+        }
+        self.assertTrue(required_names.issubset(by_name), sorted(by_name))
+
+        editable_contract = [
+            "native text",
+            "native table/chart",
+            "OOXML",
+            "inspect_editability.py --require-editable",
+            "render every slide",
+            "overlap",
+            "bounds invasion",
+            "clipping",
+            "title wrap",
+            "severe shrink",
+            "excessive whitespace",
+            "semantic visual",
+        ]
+        for name in ["build-editable-pptx", "convert-marp-to-editable-pptx"]:
+            case_text = json.dumps(by_name[name], ensure_ascii=False)
+            for phrase in editable_contract:
+                with self.subTest(eval=name, phrase=phrase):
+                    self.assertIn(phrase, case_text)
+
+        flattened = json.dumps(by_name["build-flattened-pptx-explicitly"], ensure_ascii=False)
+        for phrase in [
+            "marp --pptx",
+            "image-based",
+            "not individually editable",
+            "render every slide",
+        ]:
+            with self.subTest(eval="build-flattened-pptx-explicitly", phrase=phrase):
+                self.assertIn(phrase, flattened)
+
     def test_skill_defaults_pptx_to_native_editable_objects(self) -> None:
         """Catch a regression to Marp's flattened PPTX as the default route."""
 
