@@ -25,6 +25,7 @@ PLUGIN_MANIFEST = Path(__file__).resolve().parents[4] / ".claude-plugin" / "plug
 MARKETPLACE_MANIFEST = Path(__file__).resolve().parents[5] / ".claude-plugin" / "marketplace.json"
 PPTXGENJS_SMOKE = Path(__file__).resolve().parents[1] / "smoke_pptxgenjs.mjs"
 PPTXGENJS_LOCK = Path(__file__).resolve().parents[2] / "package-lock.json"
+PPTXGENJS_PACKAGE = Path(__file__).resolve().parents[2] / "package.json"
 PPTXGENJS_WORKFLOW = Path(__file__).resolve().parents[5] / ".github" / "workflows" / "marp-slides-pptxgenjs-smoke.yml"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
@@ -255,6 +256,15 @@ class InspectEditabilityTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, smoke)
         self.assertIn("createRequire", smoke)
+
+    def test_pptxgenjs_package_exposes_local_smoke_command(self) -> None:
+        """Keep the same native smoke check directly runnable before a PR."""
+
+        package = json.loads(PPTXGENJS_PACKAGE.read_text(encoding="utf-8"))
+        self.assertEqual(
+            package.get("scripts", {}).get("smoke:pptxgenjs"),
+            "node scripts/smoke_pptxgenjs.mjs pptxgenjs-smoke.pptx",
+        )
 
     def test_pptxgenjs_guidance_discloses_current_image_parser_advisories(self) -> None:
         """Do not turn a successful install smoke into a silent supply-chain claim."""
