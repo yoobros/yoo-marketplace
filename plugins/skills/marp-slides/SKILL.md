@@ -119,7 +119,7 @@ marp/
      }
    }
    ```
-4. `.gitignore`에 `node_modules/`, `dist/`, `package-lock.json`을 추가한다
+4. `.gitignore`에 `node_modules/`, `dist/`를 추가한다. 재현 가능한 설치를 위해 `package-lock.json`은 무시하지 않고 커밋하며, 이후 설치에는 `npm ci`를 사용한다
 5. 테마 CSS 배치 — 기본은 이 스킬의 `assets/naver.css` 를 `themes/naver/naver.css` 로 복사.
    사용자가 브랜드 스타일을 원하면 아래 커스텀 테마 절차로 제작
 6. `assets/slides-template.md` 를 `src/slides.md` 로 복사하고 내용을 채운다
