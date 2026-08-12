@@ -65,9 +65,12 @@ def _inspect_slide(package: zipfile.ZipFile, name: str) -> dict[str, object]:
 
     counts = _count_tags(root)
     # A single picture with no native content is the characteristic flattened
-    # Marp export. The explicit p:pic == 1 rule avoids rejecting slides that
-    # intentionally contain multiple decorative images.
-    editable_count = sum(counts[key] for key in ("shapes", "tables", "charts", "connectors"))
+    # Marp export. Count native text independently as editable content because
+    # text can occur in a shape, table, chart, or other OOXML object. The
+    # explicit p:pic == 1 rule avoids rejecting slides with multiple images.
+    editable_count = sum(
+        counts[key] for key in ("shapes", "text", "tables", "charts", "connectors")
+    )
     image_only = counts["images"] == 1 and editable_count == 0
     return {"name": name, **counts, "image_only": image_only}
 
@@ -80,7 +83,13 @@ def inspect_pptx(path: Path) -> dict[str, object]:
             if package.testzip() is not None:
                 raise InvalidPptxError("PPTX ZIP contains a corrupt entry")
             slides = [_inspect_slide(package, name) for name in _slide_names(package)]
-    except (OSError, zipfile.BadZipFile) as exc:
+    except (
+        OSError,
+        EOFError,
+        RuntimeError,
+        NotImplementedError,
+        zipfile.BadZipFile,
+    ) as exc:
         raise InvalidPptxError(f"invalid PPTX ZIP: {exc}") from exc
 
     totals: dict[str, int] = {key: sum(int(slide[key]) for slide in slides) for key in COUNT_KEYS}

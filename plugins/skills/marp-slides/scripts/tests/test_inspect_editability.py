@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import subprocess
 import sys
 import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 import unittest
 
 
 SCRIPT = (
     Path(__file__).resolve().parents[1] / "inspect_editability.py"
 )
+
+SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
+INSPECTOR = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+SPEC.loader.exec_module(INSPECTOR)
 
 
 NS = {
@@ -30,6 +37,12 @@ def make_pptx(path: Path, slide_xml: str, rels_xml: str | None = None) -> None:
         package.writestr("ppt/slides/slide1.xml", slide_xml)
         if rels_xml is not None:
             package.writestr("ppt/slides/_rels/slide1.xml.rels", rels_xml)
+
+
+def make_slides_pptx(path: Path, slides: dict[str, str]) -> None:
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as package:
+        for name, xml in slides.items():
+            package.writestr(f"ppt/slides/{name}", xml)
 
 
 def run_inspector(path: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -88,6 +101,23 @@ class InspectEditabilityTests(unittest.TestCase):
         self.assertTrue(report["slides"][0]["image_only"])
         self.assertIn("slide1.xml", " ".join(report["failures"]))
 
+    def test_one_picture_with_editable_text_is_not_image_only(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
+  <p:cSld><p:spTree>
+    <p:pic><p:nvPicPr/><p:blipFill/><p:spPr/><a:t>Editable caption</a:t></p:pic>
+  </p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            deck = Path(directory) / "picture-and-text.pptx"
+            make_pptx(deck, slide)
+            result = run_inspector(deck, "--require-editable")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = parse_report(result)
+        self.assertTrue(report["editable"])
+        self.assertFalse(report["slides"][0]["image_only"])
+        self.assertEqual(report["slides"][0]["text"], 1)
+
     def test_native_table_and_chart_are_counted(self) -> None:
         slide = f"""<?xml version='1.0' encoding='UTF-8'?>
 <p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}' xmlns:c='{NS['c']}' xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships'>
@@ -127,6 +157,34 @@ class InspectEditabilityTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 2)
         self.assertIn("invalid", result.stderr.lower())
+
+    def test_runtime_zip_read_error_returns_input_error(self) -> None:
+        for error in (RuntimeError("unsupported ZIP"), NotImplementedError("ZIP read unavailable")):
+            with self.subTest(error=type(error).__name__), mock.patch.object(
+                INSPECTOR.zipfile, "ZipFile", side_effect=error
+            ):
+                self.assertEqual(INSPECTOR.main(["broken.pptx"]), 2)
+
+    def test_slide_order_and_json_report_are_stable(self) -> None:
+        slide = f"""<p:sld xmlns:p='{NS['p']}' xmlns:a='{NS['a']}'>
+  <p:cSld><p:spTree><p:sp><p:nvSpPr/><p:txBody><a:p><a:r><a:t>Text</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld>
+</p:sld>"""
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            deck = root / "ordered.pptx"
+            report_path = root / "report.json"
+            make_slides_pptx(deck, {"slide10.xml": slide, "slide2.xml": slide, "slide1.xml": slide})
+            first = run_inspector(deck, "--json", str(report_path))
+            second = run_inspector(deck)
+
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            self.assertEqual(first.stdout, second.stdout)
+            self.assertEqual(json.loads(first.stdout), json.loads(report_path.read_text(encoding="utf-8")))
+            self.assertEqual(
+                [slide["name"] for slide in json.loads(first.stdout)["slides"]],
+                ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml", "ppt/slides/slide10.xml"],
+            )
 
 
 if __name__ == "__main__":
