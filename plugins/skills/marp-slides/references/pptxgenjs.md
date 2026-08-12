@@ -10,6 +10,10 @@ PptxGenJS 4.0.1은 Node.js 18 이상에서 ESM과 CommonJS를 지원한다. npm 
 제한이 선언되어 있지 않아 Node.js가 동작하는 macOS, Linux, Windows에서 같은 로컬 설치
 명령을 사용한다. PowerPoint나 LibreOffice는 **생성 자체에는 필요하지 않다**.
 
+Node.js 18에서는 4.0.1의 ESM 진입점 선언과 파일 형식이 맞지 않아 직접 `import`가 실패할
+수 있다. `.mjs`에서 `createRequire(import.meta.url)`로 `require("pptxgenjs")`를 호출해
+패키지의 CommonJS 진입점을 명시적으로 사용한다. 저장소 smoke script가 이 경로의 예시다.
+
 ```bash
 node --version
 npm install --save-dev pptxgenjs@4.0.1

@@ -243,6 +243,7 @@ class InspectEditabilityTests(unittest.TestCase):
         for phrase in ["addText", "addChart", "addTable", "addShape", "addNotes", "writeFile"]:
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, smoke)
+        self.assertIn("createRequire", smoke)
 
     def test_pptxgenjs_guidance_discloses_current_image_parser_advisories(self) -> None:
         """Do not turn a successful install smoke into a silent supply-chain claim."""

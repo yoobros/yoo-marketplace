@@ -1,4 +1,10 @@
-import pptxgen from "pptxgenjs";
+import { createRequire } from "node:module";
+
+// PptxGenJS 4.0.1 advertises an ESM entry whose .js file lacks a package
+// `type: module` marker. Select its supported CommonJS export explicitly so
+// Node 18 behaves consistently on macOS, Linux, and Windows.
+const require = createRequire(import.meta.url);
+const pptxgen = require("pptxgenjs");
 
 const output = process.argv[2] ?? "pptxgenjs-smoke.pptx";
 const pptx = new pptxgen();
