@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -22,8 +23,10 @@ NS = {
 
 class PptxGenJSSmokeContractTests(unittest.TestCase):
     def test_npm_smoke_writes_temp_native_deck_with_notes_and_in_bounds_objects(self) -> None:
+        npm = shutil.which("npm")
+        self.assertIsNotNone(npm, "npm must be installed for the native PPTX smoke")
         result = subprocess.run(
-            ["npm", "run", "smoke:pptxgenjs", "--silent"],
+            [npm, "run", "smoke:pptxgenjs", "--silent"],
             cwd=SKILL_ROOT,
             check=False,
             capture_output=True,
