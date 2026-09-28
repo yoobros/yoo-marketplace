@@ -116,5 +116,26 @@
       "표지 footnote 에 '코드 기준 <sha>' 표기가 있다",
       "sha 가 placeholder 가 아닌 실제 git 커밋 해시다"
     ]
+  },
+  {
+    "name": "narration-video",
+    "prompt": "이 덱으로 발표 영상 만들어줘. 나레이션은 TTS 로, 화자는 한 명으로.",
+    "expected": "Writes script/narration.md with one `## N.` section per slide (count equals slide count), synthesizes wav with a single fixed preset speaker via scripts/tts.py, renders PNGs, and assembles mp4 via scripts/make_video.py which refuses when PNG/wav counts mismatch.",
+    "assertions": [
+      "Narration section count equals slide count and section numbers match PNG numbers",
+      "One speaker id is used for every section; no seed-based per-section voice",
+      "No unreplaced {{placeholder}} remains in slides or narration before synthesis",
+      "Reports total duration and per-slide durations"
+    ]
+  },
+  {
+    "name": "latest-only-concise",
+    "prompt": "지난주 덱을 이번 결과로 갱신해줘",
+    "expected": "Replaces the affected slides with the current state only — no change-log slides, no '처음엔 ~였다' history, no defect-fix narrative; keeps the deck around 10 slides, adds real sample rows and symbol tables where formulas appear, and names external models precisely.",
+    "assertions": [
+      "Does not add slides describing previous versions or fixes",
+      "Formulas are accompanied by a symbol/meaning table",
+      "Results slide shows both good and bad examples and states limitations"
+    ]
   }
 ]
