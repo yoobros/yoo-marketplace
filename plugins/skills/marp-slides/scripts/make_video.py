@@ -28,6 +28,20 @@ def ffmpeg_exe() -> str:
         raise SystemExit("ffmpeg 가 없다 — 시스템 설치 또는 `pip install imageio-ffmpeg`")
 
 
+def pair_slides(pngs: list[Path], wavs: dict[int, Path], allow_silent: bool = False) -> list[tuple[int, Path, Path | None]]:
+    """슬라이드 번호 1..N 에 wav 를 붙인다. 번호가 어긋나면 SystemExit — 밀린 싱크로 영상을 만들지 않는다."""
+    if not pngs:
+        raise SystemExit("PNG 없음 — `npx marp src/slides.md --html --theme-set … --images png --output dist/slide.png`")
+    expect = set(range(1, len(pngs) + 1))
+    extra = sorted(set(wavs) - expect)
+    if extra:
+        raise SystemExit(f"슬라이드는 {len(pngs)}장인데 나레이션 {extra}번이 남는다 — 대본 절 번호를 PNG 번호에 맞춘다")
+    missing = sorted(expect - set(wavs))
+    if missing and not allow_silent:
+        raise SystemExit(f"슬라이드 {missing}번 나레이션이 없다 — 대본에 절을 추가하거나 `--allow-silent` 로 무음 처리")
+    return [(i, png, wavs.get(i)) for i, png in enumerate(pngs, 1)]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--png", default="marp/dist", help="marp --images png 산출 (slide.001.png …)")
@@ -40,20 +54,15 @@ def main() -> None:
     ff = ffmpeg_exe()
     pngs = sorted(Path(args.png).glob("slide.*.png"))
     wavs = {int(p.stem): p for p in Path(args.wav).glob("*.wav") if p.stem.isdigit()}
-    if not pngs:
-        raise SystemExit(f"PNG 없음: {args.png} — `npx marp src/slides.md --html --theme-set … --images png --output dist/slide.png`")
-    expect = set(range(1, len(pngs) + 1))
-    if set(wavs) != expect and not args.allow_silent:
-        raise SystemExit(f"슬라이드 {len(pngs)}장 ↔ 나레이션 {sorted(wavs)} 불일치 — 대본 절 번호를 PNG 번호에 맞춘다")
+    pairs = pair_slides(pngs, wavs, args.allow_silent)
     seg_dir = Path(args.out).parent / "seg"; seg_dir.mkdir(parents=True, exist_ok=True)
 
     def run(*a: str) -> None:
         subprocess.run([ff, "-y", "-hide_banner", "-loglevel", "error", *a], check=True)
 
     segs = []
-    for i, png in enumerate(pngs, 1):
+    for i, png, wav in pairs:
         seg = seg_dir / f"{i:02d}.mp4"
-        wav = wavs.get(i)
         if wav is None:
             run("-loop", "1", "-framerate", "24", "-i", str(png), "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", "3",
                 "-c:v", "libx264", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(seg))

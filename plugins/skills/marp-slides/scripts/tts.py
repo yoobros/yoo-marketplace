@@ -55,16 +55,19 @@ def main() -> None:
     if left:
         raise SystemExit(f"미치환 placeholder 가 있는 절: {left}")
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
-    meta = {}
+    meta_path = out / "meta.json"
+    meta: dict[str, dict] = {}
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text(encoding="utf-8")).get("sections", {})
     for n, body in secs:
         f = out / f"{n:02d}.wav"
         if f.exists():
             continue
         t = time.time()
         f.write_bytes(render(args.base, body, args.speaker, args.speed, args.language))
-        meta[n] = {"chars": len(body), "elapsed": round(time.time() - t, 1)}
-        print(f"slide {n:02d}: {len(body)}자 (걸림 {meta[n]['elapsed']}s)", flush=True)
-    (out / "meta.json").write_text(json.dumps({"speaker": args.speaker, "speed": args.speed, "sections": meta},
+        meta[str(n)] = {"chars": len(body), "elapsed": round(time.time() - t, 1)}
+        print(f"slide {n:02d}: {len(body)}자 (걸림 {meta[str(n)]['elapsed']}s)", flush=True)
+    meta_path.write_text(json.dumps({"speaker": args.speaker, "speed": args.speed, "sections": meta},
                                               ensure_ascii=False, indent=1))
     print(f"TTS_DONE · 절 {len(secs)} · 화자 {args.speaker}")
 
