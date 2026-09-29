@@ -38,12 +38,15 @@ marp/
 ## 3. 슬라이드 PNG
 
 ```bash
-cd marp && CHROME_PATH=<chrome> npx marp src/slides.md --html --theme-set themes/<테마>/<테마>.css --images png --output dist/slide.png
+cd marp && CHROME_PATH=<chrome> npx marp --no-stdin src/slides.md --html --theme-set themes/<테마>/<테마>.css --images png --output dist/slide.png
 ```
 
 - Chrome 이 없으면 `npx puppeteer browsers install chrome` 후 그 경로를 `CHROME_PATH` 로.
-- **marp 가 간헐적으로 멈춘다** (mermaid CDN 로드 대기). `timeout 240` 으로 감싸고 PNG 장수가 맞을 때까지
-  2~3회 재시도한다. 재시도 전 남은 `chrome` 프로세스를 정리한다.
+- **비대화형 셸(에이전트·CI)에서는 반드시 `--no-stdin`** — 없으면 marp 가 stdin 입력을 기다리며 멈춘다
+  ("Currently waiting data from stdin stream"). 이것이 "간헐적으로 멈춤" 의 실제 원인이다. 그래도 멈추면
+  `timeout 240` 으로 감싸고 남은 `chrome` 프로세스를 정리한 뒤 재시도.
+- 그림은 `<img src="data:image/png;base64,…">` 로 임베드하면 경로 문제 없이 PNG/PDF 에 들어간다
+  (`img/x.png` 상대 경로는 HTML 블록 안에서 안 보일 수 있다).
 - PNG 장수 = 대본 절 수 인지 확인 (`ls dist/slide.*.png | wc -l`).
 
 ## 4. 합치기

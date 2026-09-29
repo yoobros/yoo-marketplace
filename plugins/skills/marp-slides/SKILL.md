@@ -342,7 +342,7 @@ Attention 메커니즘<sup>[1]</sup>은 ...
 
 ## 빌드
 
-빌드 명령은 항상 프로젝트 루트(`marp/`)에서 실행한다.
+빌드 명령은 항상 프로젝트 루트(`marp/`)에서 실행한다. 에이전트·CI 처럼 **비대화형 셸에서는 `npx marp --no-stdin …`** — 없으면 stdin 을 기다리며 조용히 멈춘다.
 
 | 명령 | 결과물 |
 |------|--------|
@@ -406,7 +406,7 @@ magick -density 90 dist/slides.pdf /tmp/pdfcheck/p-%02d.png   # 또는: pdftoppm
 1. `assets/narration-template.md` → `script/narration.md`. **`## N.` 절 = 슬라이드 N** (표지가 1, 절 수 = 장수).
    슬라이드 글을 읽지 말고 그 장의 메시지를 40~70초로 말한다. 숫자·약어는 한글로 풀고, 수식 장은 기호 뜻을 말로 설명.
 2. `scripts/tts.py --base <TTS 서버> --speaker <프리셋 1개>` — 화자는 전 구간 하나로 고정 (seed 화자 금지).
-3. `npx marp … --images png --output dist/slide.png` (간헐적으로 멈춤 → timeout + 재시도).
+3. `npx marp --no-stdin … --images png --output dist/slide.png` — 비대화형 셸에서 `--no-stdin` 이 없으면 stdin 을 기다리며 멈춘다.
 4. `scripts/make_video.py` — PNG 장수 ↔ wav 번호가 1:1 이 아니면 멈춘다. 이 검사를 우회하지 않는다.
 5. 전달 전 체크리스트(video.md §5): 절 수 = 장수 = wav 수, 화자 1명, `{{` 0건, 총 길이.
 
