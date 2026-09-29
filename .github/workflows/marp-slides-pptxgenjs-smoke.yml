@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "plugins/skills/marp-slides/**"
+      - "plugins/.claude-plugin/plugin.json"
+      - ".claude-plugin/marketplace.json"
       - ".github/workflows/marp-slides-pptxgenjs-smoke.yml"
   workflow_dispatch:
 

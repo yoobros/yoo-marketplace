@@ -6,7 +6,7 @@
 
 | 플러그인 | 설명 | 카테고리 |
 |---------|------|---------|
-| [marp-slides](./plugins) | Marp로 슬라이드를 자연어로 생성·수정·빌드. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들 + 브랜드 CSS 기반 커스텀 테마 (Claude Code·Codex 겸용) | productivity |
+| [marp-slides](./plugins) | Marp로 슬라이드를 자연어로 생성·수정·빌드. 검증된 덱 템플릿 + LaTeX/Mermaid/footnote + 네이버 테마 번들 + 브랜드 CSS 기반 커스텀 테마 + 대본→TTS→mp4 나레이션 영상 (Claude Code·Codex 겸용) | productivity |
 
 ## 설치 가이드
 

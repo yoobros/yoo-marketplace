@@ -27,6 +27,7 @@ PPTXGENJS_SMOKE = Path(__file__).resolve().parents[1] / "smoke_pptxgenjs.mjs"
 PPTXGENJS_LOCK = Path(__file__).resolve().parents[2] / "package-lock.json"
 PPTXGENJS_PACKAGE = Path(__file__).resolve().parents[2] / "package.json"
 PPTXGENJS_WORKFLOW = Path(__file__).resolve().parents[5] / ".github" / "workflows" / "marp-slides-pptxgenjs-smoke.yml"
+SEMVER = r"^\d+\.\d+\.\d+$"
 
 SPEC = importlib.util.spec_from_file_location("inspect_editability", SCRIPT)
 INSPECTOR = importlib.util.module_from_spec(SPEC)
@@ -114,14 +115,15 @@ def parse_report(result: subprocess.CompletedProcess[str]) -> dict:
 
 
 class InspectEditabilityTests(unittest.TestCase):
-    def test_plugin_metadata_advertises_editable_powerpoint_at_version_1_2_0(self) -> None:
-        """Catch stale discovery metadata that still presents flattened PPTX as the feature."""
+    def test_plugin_metadata_advertises_editable_powerpoint_and_narration_video(self) -> None:
+        """Catch stale discovery metadata: manifests must agree on version and advertise current features."""
 
         plugin = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
-        self.assertEqual(plugin["version"], "1.2.0")
+        self.assertRegex(plugin["version"], SEMVER, "plugin.json version must be MAJOR.MINOR.PATCH")
         self.assertIn("editable", plugin["description"].lower())
+        self.assertIn("narration", plugin["description"].lower())
 
-        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "NAVER", "CSS", "Claude Code", "Codex"]:
+        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "NAVER", "CSS", "TTS", "mp4", "Claude Code", "Codex"]:
             with self.subTest(manifest="plugin", keyword=keyword):
                 self.assertIn(keyword, plugin["description"])
 
@@ -130,11 +132,19 @@ class InspectEditabilityTests(unittest.TestCase):
 
         marketplace = json.loads(MARKETPLACE_MANIFEST.read_text(encoding="utf-8"))
         entry = next(item for item in marketplace["plugins"] if item["name"] == "marp-slides")
-        self.assertEqual(entry["version"], "1.2.0")
+        self.assertEqual(
+            entry["version"],
+            plugin["version"],
+            "marketplace.json and plugin.json must publish the same marp-slides version — bump both together",
+        )
         self.assertIn("편집", entry["description"])
-        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "네이버", "CSS", "Claude Code", "Codex"]:
+        self.assertIn("나레이션", entry["description"])
+        for keyword in ["Marp", "LaTeX", "Mermaid", "footnote", "네이버", "CSS", "TTS", "mp4", "Claude Code", "Codex"]:
             with self.subTest(manifest="marketplace", keyword=keyword):
                 self.assertIn(keyword, entry["description"])
+        for keyword in ["video", "tts", "narration"]:
+            with self.subTest(manifest="marketplace", keyword=keyword):
+                self.assertIn(keyword, entry["tags"])
 
     def test_pptx_evals_cover_editable_defaults_conversion_and_explicit_flattening(self) -> None:
         """Keep all three PPTX routing outcomes measurable in the eval corpus."""
